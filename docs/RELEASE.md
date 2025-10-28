@@ -18,16 +18,16 @@ Panduan singkat buat rilis versi baru sekaligus publish image pra-build ke GitHu
 ## 2. Workflow build-image.yml
 Setiap push tag `v*` akan menjalankan workflow:
 1. Membangun image PHP dev stack dari `docker/dev/php/Dockerfile`.
-2. Push dua tag ke GHCR (gunakan nama organisasi Anda):
-   - `ghcr.io/<owner>/c4ignite-dev:<tag>` (misal `v1.2.0`)
-   - `ghcr.io/<owner>/c4ignite-dev:latest`
+2. Push dua tag ke GHCR (gunakan namespace pribadi):
+   - `ghcr.io/neflalabs/c4ignite-dev:<tag>` (misal `v1.2.0`)
+   - `ghcr.io/neflalabs/c4ignite-dev:latest`
 
 > **Catatan:** Workflow memakai token GitHub standar dengan izin `packages:write`. Pastikan repository sudah mengizinkan akun/organisasi mengakses GHCR.
 
 ## 3. Konsumsi image
 - Sambungkan `docker/dev/docker-compose.yml` ke image dengan men-set environment variable:
   ```bash
-  export C4IGNITE_PHP_IMAGE=ghcr.io/<owner>/c4ignite-dev:latest
+  export C4IGNITE_PHP_IMAGE=ghcr.io/neflalabs/c4ignite-dev:latest
   ```
 - Jalankan `docker compose pull php` sebelum `./scripts/c4ignite up` untuk menarik image terbaru.
 
@@ -35,8 +35,8 @@ Setiap push tag `v*` akan menjalankan workflow:
 Jika ingin distribusi offline:
 1. Setelah workflow sukses, unduh image:
    ```bash
-   docker pull ghcr.io/<owner>/c4ignite-dev:<tag>
-   docker save ghcr.io/<owner>/c4ignite-dev:<tag> -o c4ignite-dev-<tag>.tar
+   docker pull ghcr.io/neflalabs/c4ignite-dev:<tag>
+   docker save ghcr.io/neflalabs/c4ignite-dev:<tag> -o c4ignite-dev-<tag>.tar
    ```
 2. Unggah sebagai Release asset di GitHub.
 
@@ -45,7 +45,7 @@ Jika ingin distribusi offline:
 - Untuk image produksi berbasis AppStarter, jalankan manual:
   ```bash
   ./scripts/c4ignite init --force-download
-  ./scripts/c4ignite build -t ghcr.io/<owner>/c4ignite-app:<tag>
-  docker push ghcr.io/<owner>/c4ignite-app:<tag>
+  ./scripts/c4ignite build -t ghcr.io/neflalabs/c4ignite-app:<tag>
+  docker push ghcr.io/neflalabs/c4ignite-app:<tag>
   ```
 - Refresh dokumen bila ada perubahan besar pada tooling atau pipeline.

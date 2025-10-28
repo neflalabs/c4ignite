@@ -1,7 +1,7 @@
 services:
   php:
     # Default ke image pra-build; override via C4IGNITE_PHP_IMAGE atau build lokal.
-    image: "${C4IGNITE_PHP_IMAGE:-ghcr.io/your-org/c4ignite-dev:latest}"
+    image: "${C4IGNITE_PHP_IMAGE:-ghcr.io/neflalabs/c4ignite-dev:latest}"
     build:
       context: ../..
       dockerfile: docker/dev/php/Dockerfile

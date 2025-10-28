@@ -13,7 +13,7 @@
 3. Edit `src/.env` atau `src/.env.docker` sesuai kebutuhan. Kalau belum ada, init bakal bikinin otomatis.
 4. Nyalain stack via `./scripts/c4ignite up`, terus install dependency pakai `./scripts/c4ignite composer install`.
    - Kalau kena limit API GitHub, set `GH_TOKEN` (PAT read-only) sebelum panggil `c4ignite init`.
-   - Punya image pra-build? Set `C4IGNITE_PHP_IMAGE=ghcr.io/<owner>/c4ignite-dev:latest` terus `docker compose pull php` supaya container pakai image siap pakai.
+   - Punya image pra-build? Set `C4IGNITE_PHP_IMAGE=ghcr.io/neflalabs/c4ignite-dev:latest` terus `docker compose pull php` supaya container pakai image siap pakai.
 5. Opsional: jalankan `./scripts/c4ignite setup env copy dev` (atau `staging`/`prod`/`docker`) buat nurunin template `.env`.
 6. Opsional: jalankan `./scripts/c4ignite setup shell` biar alias dan auto-complete langsung aktif.
 
