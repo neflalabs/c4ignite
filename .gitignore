@@ -1,0 +1,19 @@
+# Generated application sources (kept out of VCS)
+/src/
+
+# Backup archives created by tooling
+c4ignite-src-*.tar.gz
+/backups/
+
+# Common local artifacts
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.docker
+
+# Dependency directories
+node_modules/
+vendor/

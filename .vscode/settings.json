@@ -1,0 +1,6 @@
+{
+  "php.validate.executablePath": "/usr/local/bin/php",
+  "editor.formatOnSave": true,
+  "intelephense.environment.documentRoot": "src/public",
+  "search.useIgnoreFiles": false
+}
