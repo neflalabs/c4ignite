@@ -13,6 +13,7 @@ __all__ = [
     "create_backup_metadata",
     "apply_env_defaults",
     "parse_release",
+    "list_compose_services",
     "main",
 ]
 
@@ -156,6 +157,14 @@ def parse_release(args: argparse.Namespace) -> int:
     return 0
 
 
+def list_compose_services(args: argparse.Namespace) -> int:
+    compose_config = json.loads(sys.stdin.read())
+    services = compose_config.get("services", {})
+    for name in services.keys():
+        print(name)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="c4ignite-tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -189,6 +198,9 @@ def main(argv: list[str] | None = None) -> int:
     release_parser = subparsers.add_parser("parse-release")
     release_parser.add_argument("field", choices=("tag", "tarball"))
     release_parser.set_defaults(func=parse_release)
+
+    services_parser = subparsers.add_parser("list-compose-services")
+    services_parser.set_defaults(func=list_compose_services)
 
     args = parser.parse_args(argv)
     return args.func(args)
