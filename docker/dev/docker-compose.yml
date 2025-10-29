@@ -16,7 +16,7 @@ services:
       - c4ignite
 
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:latest
     container_name: c4ignite-nginx
     depends_on:
       - php

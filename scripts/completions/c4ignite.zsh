@@ -3,7 +3,7 @@
 _c4ignite() {
   local -a commands
   commands=(
-    up down restart status shell spark composer php logs
+    up down restart status pull shell spark composer php logs
     init doctor test lint audit build xdebug fresh migrate backup setup
   )
 
@@ -40,7 +40,8 @@ _c4ignite() {
       ;;
     shell)
       if (( CURRENT == 3 )); then
-        _describe 'service' (php mysql nginx python)
+        local -a shell_services=(php mysql nginx python)
+        _describe 'service' shell_services
         return
       fi
       ;;
@@ -57,11 +58,13 @@ _c4ignite() {
           ;;
         env)
           if (( CURRENT == 4 )); then
-            _describe 'env command' (list copy)
+            local -a setup_env_sub=(list copy)
+            _describe 'env command' setup_env_sub
             return
           fi
           if [[ "$words[4]" == copy && CURRENT == 5 ]]; then
-            _describe 'template' (dev staging prod docker)
+            local -a env_templates=(dev staging prod docker)
+            _describe 'template' env_templates
             return
           fi
           ;;

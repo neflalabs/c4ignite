@@ -44,6 +44,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             -f docker/dev/php/Dockerfile \
+            --label org.opencontainers.image.authors="${{ github.repository_owner }}" \
             -t "${IMAGE}:${TAG_NAME}" \
             -t "${IMAGE}:latest" \
             --push \

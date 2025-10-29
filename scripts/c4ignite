@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 COMPOSE_FILE="${PROJECT_ROOT}/docker/dev/docker-compose.yml"
 APP_SERVICE="php"
 APP_ROOT="${PROJECT_ROOT}/src"
@@ -11,7 +11,7 @@ XDEBUG_INI="${PROJECT_ROOT}/docker/dev/php/conf.d/xdebug.ini"
 XDEBUG_DEFAULT_HOST="${XDEBUG_CLIENT_HOST:-host.docker.internal}"
 XDEBUG_DEFAULT_PORT="${XDEBUG_CLIENT_PORT:-9003}"
 COMMANDS=(
-    up down restart status shell spark composer php logs
+    up down restart status pull shell spark composer php logs
     init doctor test lint audit build xdebug fresh migrate backup setup
 )
 
@@ -33,6 +33,15 @@ die() {
     exit 1
 }
 
+ensure_in_project_dir() {
+    local current_dir
+    current_dir="$(pwd -P)"
+
+    if [[ "${current_dir}" != "${PROJECT_ROOT}" && "${current_dir}" != "${PROJECT_ROOT}"/* ]]; then
+        die "c4ignite must be run from within a c4ignite project directory (containing scripts/c4ignite)"
+    fi
+}
+
 ensure_compose() {
     if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
         COMPOSE_CMD="docker"
@@ -47,6 +56,7 @@ ensure_compose() {
     fi
 }
 
+ensure_in_project_dir
 ensure_compose
 
 compose() {
@@ -159,15 +169,33 @@ write_setup_snippet() {
     local file="$1"
     local shell="$2"
     local alias_name="$3"
-    local alias_line
-    alias_line=$(printf "alias %s=%q" "${alias_name}" "${C4IGNITE_BIN}")
 
     if [[ "${shell}" == "bash" ]]; then
         local completion="${COMPLETIONS_DIR}/c4ignite.bash"
         cat >> "${file}" <<EOF
 
 ${SETUP_MARK_START}
-${alias_line}
+unalias ${alias_name} >/dev/null 2>&1
+unset -f ${alias_name} >/dev/null 2>&1
+${alias_name}() {
+  local search_dir="\$(pwd -P)"
+  while true; do
+    if [[ -x "\${search_dir}/scripts/c4ignite" ]]; then
+      (
+        cd "\${search_dir}" || exit 1
+        "\${search_dir}/scripts/c4ignite" "\$@"
+      )
+      return \$?
+    fi
+    if [[ "\${search_dir}" == "/" ]]; then
+      break
+    fi
+    search_dir="\${search_dir%/*}"
+    [[ -z "\${search_dir}" ]] && search_dir="/"
+  done
+  printf 'Error: ${alias_name} must be run from within a c4ignite project (scripts/c4ignite not found)\n' >&2
+  return 1
+}
 if [ -f "${completion}" ]; then
   source "${completion}"
 fi
@@ -178,7 +206,27 @@ EOF
         cat >> "${file}" <<EOF
 
 ${SETUP_MARK_START}
-${alias_line}
+unfunction ${alias_name} >/dev/null 2>&1
+unalias ${alias_name} >/dev/null 2>&1
+${alias_name}() {
+  local search_dir="\$(pwd -P)"
+  while true; do
+    if [[ -x "\${search_dir}/scripts/c4ignite" ]]; then
+      (
+        cd "\${search_dir}" || return 1
+        "\${search_dir}/scripts/c4ignite" "\$@"
+      )
+      return \$?
+    fi
+    if [[ "\${search_dir}" == "/" ]]; then
+      break
+    fi
+    search_dir="\${search_dir%/*}"
+    [[ -z "\${search_dir}" ]] && search_dir="/"
+  done
+  printf 'Error: ${alias_name} must be run from within a c4ignite project (scripts/c4ignite not found)\n' >&2
+  return 1
+}
 if command -v compinit >/dev/null 2>&1; then
   autoload -U compinit && compinit
 fi
@@ -246,6 +294,10 @@ cmd_restart() {
 
 cmd_status() {
     compose ps
+}
+
+cmd_pull() {
+    compose pull "$@"
 }
 
 require_service_running() {
@@ -1480,6 +1532,7 @@ Commands:
   down          Stop the stack and remove containers
   restart       Restart running services
   status        Show service status
+  pull          Pull service images from the registry
   shell         Open shell into a service 
   spark         Run 'php spark ...' inside the app container
   composer      Run Composer inside the app container
@@ -1509,6 +1562,7 @@ main() {
         down) cmd_down "$@" ;;
         restart) cmd_restart "$@" ;;
         status) cmd_status "$@" ;;
+        pull) cmd_pull "$@" ;;
         shell) cmd_shell "$@" ;;
         spark) cmd_spark "$@" ;;
         composer) cmd_composer "$@" ;;

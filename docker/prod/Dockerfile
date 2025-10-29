@@ -1,17 +1,42 @@
 # syntax=docker/dockerfile:1.7
 
-FROM composer:2 AS vendor
+FROM composer:latest AS vendor
 WORKDIR /app
 COPY src/composer.json src/composer.lock ./
 RUN --mount=type=cache,target=/tmp/composer \
     composer install --no-dev --prefer-dist --no-interaction --no-progress --ignore-platform-reqs
 
-FROM php:8.2-fpm-alpine AS runtime
+FROM php:8.4-fpm AS runtime
 
 WORKDIR /var/www/html
 
-RUN apk add --no-cache bash git nginx icu-data-full icu-dev libzip-dev oniguruma-dev libxml2-dev curl-dev openssl-dev zlib-dev postgresql-dev mariadb-connector-c-dev && \
-    docker-php-ext-install intl mbstring mysqli pdo_mysql pdo_pgsql zip bcmath && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        bash \
+        git \
+        unzip \
+        nginx \
+        libicu-dev \
+        libzip-dev \
+        libonig-dev \
+        libxml2-dev \
+        libssl-dev \
+        libpq-dev \
+        libmariadb-dev \
+        libcurl4-openssl-dev \
+        zlib1g-dev \
+    && docker-php-ext-configure intl && \
+    docker-php-ext-install \
+        intl \
+        mbstring \
+        mysqli \
+        pdo_mysql \
+        pdo_pgsql \
+        zip \
+        bcmath \
+        curl \
+    && docker-php-ext-enable opcache && \
+    rm -rf /var/lib/apt/lists/* && \
     mkdir -p /run/nginx
 
 COPY --from=vendor /app/vendor ./vendor
