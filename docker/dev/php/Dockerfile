@@ -1,3 +1,5 @@
+FROM composer:latest AS composer_stage
+
 FROM php:8.2-fpm AS base
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
@@ -32,7 +34,7 @@ RUN apt-get update && \
     docker-php-ext-enable opcache xdebug && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer_stage /usr/bin/composer /usr/bin/composer
 
 RUN echo "xdebug.mode=off" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
     echo "xdebug.start_with_request=no" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
