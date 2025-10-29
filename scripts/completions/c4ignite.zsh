@@ -4,7 +4,7 @@ _c4ignite() {
   local -a commands
   commands=(
     up down restart status shell spark composer php logs
-    init doctor test lint audit build xdebug fresh migrate tinker backup setup
+    init doctor test lint audit build xdebug fresh migrate backup setup
   )
 
   if (( CURRENT == 2 )); then

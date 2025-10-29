@@ -1,6 +1,6 @@
 FROM composer:latest AS composer_stage
 
-FROM php:8.2-fpm AS base
+FROM php:8.4-fpm AS base
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     APP_DIR=/var/www/html
@@ -27,6 +27,8 @@ RUN apt-get update && \
         mysqli \
         pdo_mysql \
         pdo_pgsql \
+        pdo_sqlite \
+        sqlite3 \
         zip \
         bcmath \
         curl \

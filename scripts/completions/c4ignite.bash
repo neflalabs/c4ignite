@@ -5,7 +5,7 @@ _c4ignite_complete() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    local commands="up down restart status shell spark composer php logs init doctor test lint audit build xdebug fresh migrate tinker backup setup"
+    local commands="up down restart status shell spark composer php logs init doctor test lint audit build xdebug fresh migrate backup setup"
 
     if [[ ${COMP_CWORD} -eq 1 ]]; then
         COMPREPLY=( $(compgen -W "$commands" -- "$cur") )

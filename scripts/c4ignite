@@ -12,7 +12,7 @@ XDEBUG_DEFAULT_HOST="${XDEBUG_CLIENT_HOST:-host.docker.internal}"
 XDEBUG_DEFAULT_PORT="${XDEBUG_CLIENT_PORT:-9003}"
 COMMANDS=(
     up down restart status shell spark composer php logs
-    init doctor test lint audit build xdebug fresh migrate tinker backup setup
+    init doctor test lint audit build xdebug fresh migrate backup setup
 )
 
 SETUP_MARK_START="# >>> c4ignite setup >>>"
@@ -145,7 +145,14 @@ prompt_yes_no() {
 remove_setup_block() {
     local file="$1"
     [[ -f "${file}" ]] || return 0
-    python_exec "${PYTHON_HELPER}" remove-setup-block "$file" "$SETUP_MARK_START" "$SETUP_MARK_END"
+    local tmp
+    tmp="$(mktemp)"
+    awk -v start="${SETUP_MARK_START}" -v end="${SETUP_MARK_END}" '
+        $0 == start {skip=1; next}
+        $0 == end {skip=0; next}
+        !skip {print}
+    ' "${file}" > "${tmp}"
+    mv "${tmp}" "${file}"
 }
 
 write_setup_snippet() {
@@ -340,11 +347,6 @@ EOF
 cmd_migrate() {
     require_service_running "${APP_SERVICE}"
     compose_exec "${APP_SERVICE}" php spark migrate "$@"
-}
-
-cmd_tinker() {
-    require_service_running "${APP_SERVICE}"
-    compose_exec "${APP_SERVICE}" php spark shell "$@"
 }
 
 ensure_lint_script() {
@@ -1491,7 +1493,6 @@ Commands:
   build         Build production image (use -t/--tag, --push)
   fresh         Clean containers/volumes (--reinit to rebuild src/)
   migrate       Run php spark migrate
-  tinker        Enter php spark shell
   backup        Manage src/ backups (create/list/restore/info)
   setup shell   Wizard to install/remove aliases & auto-complete
   setup env     Manage .env templates (list/copy)
@@ -1521,7 +1522,6 @@ main() {
         build) cmd_build "$@" ;;
         fresh) cmd_fresh "$@" ;;
         migrate) cmd_migrate "$@" ;;
-        tinker) cmd_tinker "$@" ;;
         backup) cmd_backup "$@" ;;
         setup) cmd_setup "$@" ;;
         xdebug) cmd_xdebug "$@" ;;
