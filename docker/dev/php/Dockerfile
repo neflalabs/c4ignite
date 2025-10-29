@@ -19,6 +19,7 @@ RUN apt-get update && \
         libssl-dev \
         libpq-dev \
         libcurl4-openssl-dev \
+        libsqlite3-dev \
         zlib1g-dev \
     && docker-php-ext-configure intl && \
     docker-php-ext-install \
