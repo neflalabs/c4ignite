@@ -30,6 +30,20 @@ _c4ignite() {
           ;;
       esac
       ;;
+    init)
+      _arguments '*:options:(--version --force-download --force --no-install --help -h)'
+      return
+      ;;
+    fresh)
+      _arguments '*:options:(--reinit --help -h)'
+      return
+      ;;
+    shell)
+      if (( CURRENT == 3 )); then
+        _describe 'service' (php mysql nginx python)
+        return
+      fi
+      ;;
     setup)
       local -a setup_sub=(shell env)
       if (( CURRENT == 3 )); then

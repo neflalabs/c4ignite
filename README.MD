@@ -6,7 +6,7 @@
 
 ## Toolkit santai buat ngerjain CodeIgniter 4 dengan rasa Laravel Sail.
 
-- Jalankan `./scripts/c4ignite init` biar skeleton CI4 (AppStarter) nongol di folder `src/` — folder ini sengaja di-ignore biar repo tetap bersih. Tarball AppStarter otomatis di-cache di `backups/cache/`, jadi init berikutnya tinggal ekstrak ulang; pakai `--force-download` kalau mau refresh.
+- Jalankan `./scripts/c4ignite init` biar skeleton CI4 (AppStarter) nongol di folder `src/` — folder ini sengaja di-ignore biar repo tetap bersih. Tarball AppStarter otomatis di-cache di `backups/cache/`, jadi init berikutnya tinggal ekstrak ulang; pakai `--force-download` kalau mau refresh. Setelah bootstrap `init` langsung jalanin `composer install` otomatis (lewati dengan `--no-install`).
 - Mau skip build lokal? Set `C4IGNITE_PHP_IMAGE=ghcr.io/neflalabs/c4ignite-dev:latest` terus `docker compose pull php` sebelum `./scripts/c4ignite up` buat tarik image pra-build.
 - Hidupin stack dev (PHP, Nginx, MariaDB, Redis, Mailhog) pakai `./scripts/c4ignite up` (tambah `--build` kalau mau rebuild image lokal).
 - Banyak shortcut praktis (`test`, `lint`, `audit`, toggle `xdebug`, `fresh`, `migrate`, `tinker`, `backup`, sampai `build` image produksi) tinggal dipanggil dari `./scripts/c4ignite` — jalankan `./scripts/c4ignite lint --setup` sekali biar lint siap pakai.

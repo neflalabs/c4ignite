@@ -17,3 +17,4 @@ c4ignite-src-*.tar.gz
 # Dependency directories
 node_modules/
 vendor/
+scripts/python/__pycache__/

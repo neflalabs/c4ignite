@@ -1,4 +1,4 @@
-# Bash completion untuk c4ignite
+# Bash completion for c4ignite
 _c4ignite_complete() {
     local cur prev
     COMPREPLY=()
@@ -32,6 +32,23 @@ _c4ignite_complete() {
                     return 0
                     ;;
             esac
+            ;;
+        init)
+            local opts="--version --force-download --force --no-install --help -h"
+            COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+            return 0
+            ;;
+        fresh)
+            local opts="--reinit --help -h"
+            COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+            return 0
+            ;;
+        shell)
+            local services="php mysql nginx python"
+            if [[ ${COMP_CWORD} -eq 2 ]]; then
+                COMPREPLY=( $(compgen -W "$services" -- "$cur") )
+                return 0
+            fi
             ;;
         setup)
             local setup_sub="shell env"

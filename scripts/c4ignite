@@ -137,7 +137,7 @@ prompt_yes_no() {
         case "${answer}" in
             [Yy]*) return 0 ;;
             [Nn]*) return 1 ;;
-            *) printf 'Masukin y atau n ya.\n' ;;
+            *) printf 'Please answer with y or n.\n' ;;
         esac
     done
 }
@@ -188,10 +188,10 @@ ensure_requirements() {
     command -v tar >/dev/null 2>&1 || die "tar is required"
     if curl -H "Accept: application/vnd.github+json" -s -I https://api.github.com/rate_limit >/dev/null 2>&1; then
         if curl -H "Accept: application/vnd.github+json" -s -I https://api.github.com/rate_limit | grep -qi '403 rate limit'; then
-            die "GitHub API rate limit exceeded. Set GH_TOKEN env var dengan token PAT (minimal read repo) atau coba lagi nanti."
+            die "GitHub API rate limit exceeded. Set GH_TOKEN (PAT with repo read access) or try again later."
         fi
     else
-        printf 'Warning: tidak bisa menghubungi api.github.com, lanjut dengan cache lokal jika tersedia.\n' >&2
+        printf 'Warning: unable to reach api.github.com, continuing with local cache if available.\n' >&2
     fi
 }
 
@@ -253,10 +253,10 @@ cmd_shell() {
         cat <<EOF
 Usage: c4ignite shell <service> [command]
 
-Service tersedia:
+Available services:
 $(compose config --format json | python_exec "${PYTHON_HELPER}" list-compose-services | sed 's/^/  - /')
 
-Contoh:
+Examples:
   c4ignite shell php /bin/bash
   c4ignite shell mysql mysql --version
 EOF
@@ -281,9 +281,18 @@ cmd_spark() {
     compose_exec "${APP_SERVICE}" php spark "$@"
 }
 
+composer_prepare_cache() {
+    compose run --rm --no-deps -T --user root "${APP_SERVICE}" sh -lc 'mkdir -p /tmp/composer/cache && chown -R 1000:1000 /tmp/composer' >/dev/null 2>&1 || true
+}
+
+composer_install_noninteractive() {
+    composer_prepare_cache
+    compose run --rm --no-deps -T -w /var/www/html "${APP_SERVICE}" composer install --no-interaction
+}
+
 cmd_composer() {
     require_service_running "${APP_SERVICE}"
-    compose run --rm --no-deps -T --user root "${APP_SERVICE}" sh -lc 'mkdir -p /tmp/composer/cache && chown -R 1000:1000 /tmp/composer' >/dev/null 2>&1 || true
+    composer_prepare_cache
     compose_exec "${APP_SERVICE}" composer "$@"
 }
 
@@ -306,15 +315,15 @@ cmd_fresh() {
                 ;;
             --help|-h)
                 cat <<EOF
-Gunakan: c4ignite fresh [--reinit]
+Usage: c4ignite fresh [--reinit]
 
-- Tanpa opsi: matiin stack + hapus volume compose.
-- --reinit: setelah bersih, folder src/ dihapus lalu bootstrap ulang.
+- Without options: stop the stack and remove compose volumes.
+- --reinit: after cleanup, delete src/ and bootstrap again.
 EOF
                 return 0
                 ;;
             *)
-                die "opsi fresh tidak dikenali: $1"
+                die "unknown option for fresh: $1"
                 ;;
         esac
     done
@@ -322,9 +331,9 @@ EOF
     compose down -v --remove-orphans || true
 
     if [[ ${reinit} -eq 1 ]]; then
-        printf "Menghapus isi src/ dan bootstrap ulang...\n"
-        rm -rf "${APP_ROOT}" || die "gagal menghapus ${APP_ROOT}"
-        "${SCRIPT_DIR}/c4ignite" init || die "init ulang gagal"
+        printf "Removing src/ contents and bootstrapping again...\n"
+        rm -rf "${APP_ROOT}" || die "failed to remove ${APP_ROOT}"
+        "${SCRIPT_DIR}/c4ignite" init || die "reinitialisation failed"
     fi
 }
 
@@ -340,14 +349,14 @@ cmd_tinker() {
 
 ensure_lint_script() {
     local composer_file="${APP_ROOT}/composer.json"
-    [[ -f "${composer_file}" ]] || die "composer.json tidak ditemukan. Jalankan './scripts/c4ignite init' dulu."
+    [[ -f "${composer_file}" ]] || die "composer.json not found. Run './scripts/c4ignite init' first."
 
     python_exec "${PYTHON_HELPER}" ensure-lint-script "$composer_file"
 }
 
 install_phpcs() {
     require_service_running "${APP_SERVICE}"
-    printf 'Menginstall dev dependency squizlabs/php_codesniffer...\n'
+        printf 'Installing dev dependency squizlabs/php_codesniffer...\n'
     compose_exec "${APP_SERVICE}" composer require --dev squizlabs/php_codesniffer:^3.10 --no-interaction
 }
 
@@ -355,9 +364,9 @@ lint_setup() {
     local assume_yes="$1"
 
     if [[ "${assume_yes}" != "yes" ]]; then
-        printf 'Setup lint akan menambahkan script "lint" di composer.json dan menginstall squizlabs/php_codesniffer (dev).\n'
-        if ! prompt_yes_no "Lanjut setup lint?" "y"; then
-            printf 'Setup lint dibatalkan.\n'
+        printf 'Lint setup will add a "lint" script to composer.json and install squizlabs/php_codesniffer (dev).\n'
+        if ! prompt_yes_no "Proceed with lint setup?" "y"; then
+        printf 'Lint setup cancelled.\n'
             return 0
         fi
     fi
@@ -366,19 +375,19 @@ lint_setup() {
     local result
     result=$(ensure_lint_script)
     if [[ "${result}" == "ADDED" ]]; then
-        printf 'Menambahkan script "lint" ke composer.json\n'
+        printf 'Added "lint" script to composer.json\n'
     else
-        printf 'Script "lint" sudah tersedia di composer.json\n'
+        printf '"lint" script already present in composer.json\n'
     fi
 
     local vendor_bin="${APP_ROOT}/vendor/bin/phpcs"
     if [[ ! -f "${vendor_bin}" ]]; then
         install_phpcs
     else
-        printf 'PHPCS sudah terpasang di vendor/bin/phpcs\n'
+        printf 'PHPCS already installed at vendor/bin/phpcs\n'
     fi
 
-    printf 'Setup lint selesai. Jalankan "./scripts/c4ignite lint" buat mulai linting.\n'
+    printf 'Lint setup complete. Run "./scripts/c4ignite lint" to start linting.\n'
 }
 
 lint_script_exists() {
@@ -392,24 +401,24 @@ phpcs_installed() {
 }
 
 ensure_backup_dir() {
-    mkdir -p "${BACKUP_DIR}" || die "Tidak bisa membuat direktori backup ${BACKUP_DIR}"
+    mkdir -p "${BACKUP_DIR}" || die "Unable to create backup directory ${BACKUP_DIR}"
 }
 
 prompt_passphrase_new() {
-    command -v openssl >/dev/null 2>&1 || die "openssl dibutuhkan untuk enkripsi backup"
+    command -v openssl >/dev/null 2>&1 || die "openssl is required for encrypted backups"
     local pass1 pass2
-    read -s -p "Passphrase baru: " pass1; printf '\n'
-    read -s -p "Konfirmasi passphrase: " pass2; printf '\n'
-    [[ -n "${pass1}" ]] || die "Passphrase tidak boleh kosong"
-    [[ "${pass1}" == "${pass2}" ]] || die "Passphrase tidak cocok"
+    read -s -p "New passphrase: " pass1; printf '\n'
+    read -s -p "Confirm passphrase: " pass2; printf '\n'
+    [[ -n "${pass1}" ]] || die "Passphrase cannot be empty"
+    [[ "${pass1}" == "${pass2}" ]] || die "Passphrases do not match"
     BACKUP_PASSPHRASE="${pass1}"
 }
 
 prompt_passphrase_existing() {
-    command -v openssl >/dev/null 2>&1 || die "openssl dibutuhkan untuk dekripsi backup"
+    command -v openssl >/dev/null 2>&1 || die "openssl is required for decrypting backups"
     local pass1
-    read -s -p "Passphrase backup: " pass1; printf '\n'
-    [[ -n "${pass1}" ]] || die "Passphrase tidak boleh kosong"
+    read -s -p "Backup passphrase: " pass1; printf '\n'
+    [[ -n "${pass1}" ]] || die "Passphrase cannot be empty"
     BACKUP_PASSPHRASE="${pass1}"
 }
 
@@ -435,7 +444,7 @@ backup_generate_default_name() {
 
 backup_create() {
     ensure_app_root_writable
-    [[ -d "${APP_ROOT}" ]] || die "Folder src/ belum ada. Jalankan './scripts/c4ignite init' dulu."
+    [[ -d "${APP_ROOT}" ]] || die "Directory src/ not found. Run './scripts/c4ignite init' first."
 
     local output=""
     local include_vendor=0
@@ -448,7 +457,7 @@ backup_create() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --output)
-                [[ $# -ge 2 ]] || die "--output butuh path"
+                [[ $# -ge 2 ]] || die "--output requires a path"
                 output="$2"
                 shift 2
                 ;;
@@ -478,15 +487,15 @@ backup_create() {
                 ;;
             --help|-h)
                 cat <<'EOF'
-Gunakan: c4ignite backup create [opsi]
+Usage: c4ignite backup create [options]
 
-Opsional:
-  --output FILE          Nama file backup (default: backups/c4ignite-src-<timestamp>.tar.gz)
-  --include-vendor       Sertakan folder vendor/ (default: tidak)
-  --include-writable     Sertakan folder writable/ (default: tidak)
-  --exclude-env          Jangan sertakan file .env
-  --encrypt              Enkripsi arsip (AES-256, butuh openssl)
-  -y, --yes              Lewati konfirmasi (non-interaktif)
+Options:
+  --output FILE          Backup filename (default: backups/c4ignite-src-<timestamp>.tar.gz)
+  --include-vendor       Include vendor/ directory (default: no)
+  --include-writable     Include writable/ directory (default: no)
+  --exclude-env          Exclude .env file
+  --encrypt              Encrypt archive (AES-256, requires openssl)
+  -y, --yes              Skip confirmation (non-interactive)
 EOF
                 return 0
                 ;;
@@ -508,9 +517,9 @@ EOF
     fi
 
     if [[ ${auto_mode} -ne 1 && ${assume_yes} -ne 1 ]]; then
-        printf 'Backup akan disimpan ke %s\n' "${filename}"
-        if ! prompt_yes_no "Lanjut membuat backup?" "y"; then
-            printf 'Backup dibatalkan.\n'
+        printf 'Backup will be saved to %s\n' "${filename}"
+        if ! prompt_yes_no "Continue creating backup?" "y"; then
+            printf 'Backup cancelled.\n'
             return 0
         fi
     fi
@@ -537,7 +546,7 @@ EOF
     local tar_cmd=(tar -czf - "${tar_excludes[@]}" -C "${APP_ROOT}" . -C "${tmpdir}" c4ignite-backup.json)
 
     if [[ ${encrypt} -eq 1 ]]; then
-        [[ ${auto_mode} -eq 1 ]] && die "Mode auto tidak mendukung enkripsi"
+        [[ ${auto_mode} -eq 1 ]] && die "Auto mode does not support encryption"
         prompt_passphrase_new
         "${tar_cmd[@]}" | openssl enc -aes-256-cbc -pbkdf2 -salt -out "${filename}" -pass pass:"${BACKUP_PASSPHRASE}"
         unset BACKUP_PASSPHRASE
@@ -546,17 +555,17 @@ EOF
     fi
 
     rm -rf "${tmpdir}"
-    printf 'Backup tersimpan di %s\n' "${filename}"
+    printf 'Backup saved to %s\n' "${filename}"
 }
 
 backup_list() {
     ensure_backup_dir
     local files=("${BACKUP_DIR}"/*)
     if [[ ! -e "${files[0]}" ]]; then
-        printf 'Belum ada backup di %s\n' "${BACKUP_DIR}"
+        printf 'No backups found in %s\n' "${BACKUP_DIR}"
         return 0
     fi
-    printf 'Daftar backup di %s:\n' "${BACKUP_DIR}"
+    printf 'Backups in %s:\n' "${BACKUP_DIR}"
     ls -1t "${BACKUP_DIR}"
 }
 
@@ -565,7 +574,7 @@ extract_metadata_from_archive() {
     local encrypted="$2"
     local passphrase="$3"
     if [[ "${encrypted}" == "yes" ]]; then
-        openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"${passphrase}" -in "${archive}" | tar -xOf - c4ignite-backup.json 2>/dev/null
+        openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"${passphrase}" -in "${archive}" 2>/dev/null | tar -xOf - c4ignite-backup.json 2>/dev/null || return 2
     else
         tar -xOf "${archive}" c4ignite-backup.json 2>/dev/null
     fi
@@ -578,7 +587,7 @@ backup_info() {
     elif [[ -f "${BACKUP_DIR}/${archive}" ]]; then
         archive="${BACKUP_DIR}/${archive}"
     else
-        die "File backup tidak ditemukan: ${archive}"
+        die "Backup file not found: ${archive}"
     fi
     local encrypted="no"
     [[ "${archive}" == *.enc ]] && encrypted="yes"
@@ -589,15 +598,18 @@ backup_info() {
     printf 'Encrypted: %s\n' "${encrypted}"
 
     local metadata=""
+    local status=0
     if [[ "${encrypted}" == "yes" ]]; then
         prompt_passphrase_existing
-        metadata=$(extract_metadata_from_archive "${archive}" "yes" "${BACKUP_PASSPHRASE}") || true
+        metadata=$(extract_metadata_from_archive "${archive}" "yes" "${BACKUP_PASSPHRASE}") || status=$?
         unset BACKUP_PASSPHRASE
     else
-        metadata=$(extract_metadata_from_archive "${archive}" "no" "") || true
+        metadata=$(extract_metadata_from_archive "${archive}" "no" "") || status=$?
     fi
 
-    if [[ -n "${metadata}" ]]; then
+    if [[ ${status} -eq 2 ]]; then
+        printf 'Metadata tidak bisa dibaca: passphrase salah atau arsip korup.\n'
+    elif [[ -n "${metadata}" ]]; then
         printf 'Metadata:\n%s\n' "${metadata}"
     else
         printf 'Metadata tidak bisa dibaca (mungkin backup lama).\n'
@@ -608,7 +620,7 @@ backup_preview_contents() {
     local archive="$1"
     local encrypted="$2"
     local passphrase="$3"
-    printf 'Cuplikan isi backup:\n'
+    printf 'Preview of backup contents:\n'
     if [[ "${encrypted}" == "yes" ]]; then
         openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"${passphrase}" -in "${archive}" | tar -tzf - | head -n 20
     else
@@ -625,7 +637,7 @@ backup_restore() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --file)
-                [[ $# -ge 2 ]] || die "--file butuh path"
+                [[ $# -ge 2 ]] || die "--file requires a path"
                 archive="$2"
                 shift 2
                 ;;
@@ -643,12 +655,12 @@ backup_restore() {
                 ;;
             --help|-h)
                 cat <<'EOF'
-Gunakan: c4ignite backup restore --file <arsip> [opsi]
+Usage: c4ignite backup restore --file <archive> [options]
 
-Opsional:
-  --auto-backup   Otomatis backup src/ sebelum restore.
-  -y, --yes       Skip konfirmasi.
-  --interactive   Pilih arsip dari daftar (abaikan --file).
+Options:
+  --auto-backup   Automatically back up src/ before restoring
+  -y, --yes       Skip confirmation
+  --interactive   Choose archive from a list (ignores --file)
 EOF
                 return 0
                 ;;
@@ -668,16 +680,16 @@ EOF
         )
         shopt -u nullglob
         if [[ ${#candidate_files[@]} -eq 0 ]]; then
-            die "Belum ada backup di ${BACKUP_DIR}"
+            die "No backups found in ${BACKUP_DIR}"
         fi
         local -a backup_list
         mapfile -t backup_list < <(ls -1t "${candidate_files[@]}")
         if [[ ! -t 0 ]]; then
             archive="${backup_list[0]}"
-            [[ -n "${archive}" ]] || die "Belum ada backup di ${BACKUP_DIR}"
-            printf 'Memakai backup terbaru: %s\n' "$(basename "${archive}")"
+            [[ -n "${archive}" ]] || die "No backups found in ${BACKUP_DIR}"
+            printf 'Using latest backup: %s\n' "$(basename "${archive}")"
         else
-            printf 'Pilih backup yang mau direstore:\n'
+            printf 'Select a backup to restore:\n'
             local index=1
             for file in "${backup_list[@]}"; do
                 printf '  %d) %s\n' "${index}" "$(basename "${file}")"
@@ -685,24 +697,24 @@ EOF
             done
             local choice=""
             while true; do
-                read -r -p "Nomor pilihan: " choice || choice=""
+                read -r -p "Select number: " choice || choice=""
                 if [[ "${choice}" =~ ^[0-9]+$ && ${choice} -ge 1 && ${choice} -lt ${index} ]]; then
                     archive="${backup_list[$((choice-1))]}"
                     break
                 else
-                    printf 'Input tidak valid. Coba lagi.\n'
+                    printf 'Invalid input. Try again.\n'
                 fi
             done
         fi
     fi
 
-    [[ -n "${archive}" ]] || die "Harus menentukan arsip backup"
+    [[ -n "${archive}" ]] || die "You must specify a backup archive"
     if [[ -f "${archive}" ]]; then
         :
     elif [[ -f "${BACKUP_DIR}/${archive}" ]]; then
         archive="${BACKUP_DIR}/${archive}"
     else
-        die "File backup tidak ditemukan: ${archive}"
+        die "Backup file not found: ${archive}"
     fi
 
     local encrypted="no"
@@ -715,21 +727,21 @@ EOF
     fi
 
     if [[ ${assume_yes} -ne 1 ]]; then
-        if ! prompt_yes_no "Lanjut restore ke ${APP_ROOT}?" "n"; then
-            printf 'Restore dibatalkan.\n'
+        if ! prompt_yes_no "Proceed with restore to ${APP_ROOT}?" "n"; then
+            printf 'Restore cancelled.\n'
             unset BACKUP_PASSPHRASE
             return 0
         fi
     fi
 
-    printf 'Menyiapkan restore (folder %s akan diganti)...\n' "${APP_ROOT}"
+    printf 'Preparing restore (directory %s will be replaced)...\n' "${APP_ROOT}"
 
     if [[ ${auto_backup} -eq 1 ]]; then
-        printf 'Membuat backup otomatis sebelum restore...\n'
+        printf 'Creating automatic backup before restore...\n'
         backup_create --auto >/dev/null
     else
         if [[ ${assume_yes} -ne 1 ]]; then
-            if prompt_yes_no "Backup src/ terlebih dahulu?" "y"; then
+            if prompt_yes_no "Create a backup of src/ first?" "y"; then
                 backup_create --auto >/dev/null
             fi
         fi
@@ -746,7 +758,7 @@ EOF
     fi
 
     rm -f "${APP_ROOT}/c4ignite-backup.json"
-    printf 'Restore selesai ke %s\n' "${APP_ROOT}"
+    printf 'Restore completed to %s\n' "${APP_ROOT}"
 }
 
 
@@ -759,12 +771,12 @@ cmd_setup_shell() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --shell)
-                [[ $# -ge 2 ]] || die "--shell butuh nama shell (bash/zsh)"
+                [[ $# -ge 2 ]] || die "--shell requires a shell name (bash/zsh)"
                 shell_opt="$2"
                 shift 2
                 ;;
             --alias)
-                [[ $# -ge 2 ]] || die "--alias butuh nama alias"
+                [[ $# -ge 2 ]] || die "--alias requires a name"
                 alias_name="$2"
                 shift 2
                 ;;
@@ -778,18 +790,18 @@ cmd_setup_shell() {
                 ;;
             --help|-h)
                 cat <<'EOF'
-Gunakan: c4ignite setup shell [opsi]
+Usage: c4ignite setup shell [options]
 
-Opsional:
-  --shell bash|zsh   Paksa target shell (default deteksi dari $SHELL)
-  --alias NAME       Alias yang dipasang (default: c4)
-  --uninstall        Hapus konfigurasi yang pernah dipasang
-  -y, --yes          Skip konfirmasi
+Options:
+  --shell bash|zsh   Force target shell (defaults to $SHELL)
+  --alias NAME       Alias to install (default: c4ignite)
+  --uninstall        Remove previously installed configuration
+  -y, --yes          Skip confirmation
 EOF
                 return 0
                 ;;
             *)
-                die "opsi setup shell tidak dikenali: $1"
+                die "unknown option for setup shell: $1"
                 ;;
         esac
     done
@@ -799,14 +811,14 @@ EOF
         bash|zsh) ;;
         *)
             if [[ ${assume_yes} -eq 1 ]]; then
-                die "Shell tidak dikenali. Gunakan --shell bash|zsh"
+                die "Unknown shell. Use --shell bash|zsh"
             fi
             shell=""
             while [[ -z "${shell}" ]]; do
-                read -r -p "Pilih shell (bash/zsh): " shell || shell=""
+                read -r -p "Select shell (bash/zsh): " shell || shell=""
                 case "${shell}" in
                     bash|zsh) ;;
-                    *) printf 'Shell tidak valid, coba lagi.\n' ; shell="" ;;
+                    *) printf 'Invalid shell, try again.\n' ; shell="" ;;
                 esac
             done
             ;;
@@ -822,23 +834,23 @@ EOF
     if [[ ${uninstall} -eq 1 ]]; then
         if [[ -f "${rc_file}" ]]; then
             remove_setup_block "${rc_file}"
-            printf 'Snippet c4ignite dibersihkan dari %s (kalau ada).\n' "${rc_file}"
+            printf 'Removed c4ignite snippet from %s (if present).\n' "${rc_file}"
         else
-            printf 'File %s tidak ditemukan, tidak ada yang dihapus.\n' "${rc_file}"
+            printf 'File %s not found, nothing to remove.\n' "${rc_file}"
         fi
         return 0
     fi
 
     if [[ ! "${alias_name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-        die "Alias hanya boleh huruf/angka/underscore dan tidak boleh diawali angka"
+        die "Alias must contain only letters/numbers/underscore and cannot start with a number"
     fi
 
     if [[ ${assume_yes} -ne 1 ]]; then
         printf 'Shell target : %s\n' "${shell}"
-        printf 'File config  : %s\n' "${rc_file}"
+        printf 'Config file  : %s\n' "${rc_file}"
         printf 'Alias        : %s\n' "${alias_name}"
-        if ! prompt_yes_no "Lanjut pasang snippet?" "y"; then
-            printf 'Instalasi dibatalkan.\n'
+        if ! prompt_yes_no "Proceed with snippet installation?" "y"; then
+            printf 'Installation cancelled.\n'
             return 0
         fi
     fi
@@ -846,11 +858,11 @@ EOF
     touch "${rc_file}"
     remove_setup_block "${rc_file}"
     write_setup_snippet "${rc_file}" "${shell}" "${alias_name}"
-    printf 'Snippet c4ignite dipasang di %s. Reload shell (source %s) atau buka terminal baru.\n' "${rc_file}" "${rc_file}"
+    printf 'Added c4ignite snippet to %s. Reload your shell (source %s) or open a new terminal.\n' "${rc_file}" "${rc_file}"
 }
 
 list_env_templates() {
-    printf 'Template environment tersedia:\n'
+    printf 'Available environment templates:\n'
     for file in "${ENV_TEMPLATES_DIR}"/*.env; do
         [[ -f "$file" ]] || continue
         printf '  - %s\n' "${file##*/}"
@@ -862,22 +874,22 @@ copy_env_template() {
     local target="${APP_ROOT}/.env"
     local source="${ENV_TEMPLATES_DIR}/${name}.env"
     if [[ ! -f "${source}" ]]; then
-        die "Template ${name} tidak ditemukan. Lihat daftar dengan 'c4ignite setup env list'."
+        die "Template ${name} not found. Run 'c4ignite setup env list' to see available templates."
     fi
 
     ensure_app_root_writable
     mkdir -p "${APP_ROOT}"
 
-    local message="Menimpa ${target} dengan template ${name}. Lanjut?"
+    local message="Overwrite ${target} with template ${name}?"
     if [[ -f "${target}" ]]; then
         if ! prompt_yes_no "${message}" "n"; then
-            printf 'Dibatalkan, file lama tetap dipertahankan.\n'
+            printf 'Cancelled, existing file kept.\n'
             return 0
         fi
     fi
 
     cp "${source}" "${target}"
-    printf 'Template %s disalin ke %s\n' "${name}" "${target}"
+    printf 'Template %s copied to %s\n' "${name}" "${target}"
 }
 
 cmd_env() {
@@ -889,20 +901,20 @@ cmd_env() {
             ;;
         copy)
             local name="$1"
-            [[ -n "${name}" ]] || die "Gunakan: c4ignite setup env copy <nama>"
+            [[ -n "${name}" ]] || die "Usage: c4ignite setup env copy <name>"
             copy_env_template "${name}"
             ;;
         ""|-h|--help)
             cat <<'EOF'
-Gunakan: c4ignite setup env <perintah>
+Usage: c4ignite setup env <command>
 
-Perintah:
-  list             Tampilkan template env yang tersedia.
-  copy <nama>      Salin template ke src/.env (nama: dev/staging/prod/docker dst).
+Commands:
+  list             Show available env templates
+  copy <name>      Copy template to src/.env (names: dev/staging/prod/docker etc.)
 EOF
             ;;
         *)
-            die "Perintah setup env tidak dikenali: ${action}"
+            die "Unknown setup env command: ${action}"
             ;;
     esac
 }
@@ -915,14 +927,14 @@ cmd_setup() {
         env) cmd_env "$@" ;;
         ""|-h|--help)
             cat <<'EOF'
-Perintah setup tersedia:
-  c4ignite setup shell [opsi]   Pasang/hapus alias & auto-complete.
-  c4ignite env copy <nama>       Salin template env ke src/.env (nama: dev/staging/prod/docker).
-  c4ignite env list              Lihat daftar template env yang tersedia.
+Available setup commands:
+  c4ignite setup shell [options]   Install/remove alias & auto-completion
+  c4ignite env copy <name>         Copy env template to src/.env (dev/staging/prod/docker)
+  c4ignite env list                List available env templates
 EOF
             ;;
         *)
-            die "setup subcommand tidak dikenali: ${subcmd}"
+            die "Unknown setup subcommand: ${subcmd}"
             ;;
     esac
 }
@@ -934,18 +946,18 @@ cmd_backup() {
         create) backup_create "$@" ;;
         list) backup_list "$@" ;;
         restore) backup_restore "$@" ;;
-        info) [[ $# -ge 1 ]] || die "Gunakan: c4ignite backup info <file>"; backup_info "$1" ;;
+        info) [[ $# -ge 1 ]] || die "Usage: c4ignite backup info <file>"; backup_info "$1" ;;
         ""|-h|--help)
             cat <<'EOF'
-Perintah backup tersedia:
-  c4ignite backup create [opsi]   Buat arsip src/ (opsional enkripsi).
-  c4ignite backup list            Tampilkan daftar backup di folder backups/.
-  c4ignite backup restore <file>  Restore arsip ke src/ (dengan konfirmasi).
-  c4ignite backup info <file>     Lihat metadata sebuah arsip.
+Available backup commands:
+  c4ignite backup create [options]   Create archive of src/ (optional encryption)
+  c4ignite backup list               List backups in the backups/ directory
+  c4ignite backup restore <file>     Restore archive to src/ (with confirmation)
+  c4ignite backup info <file>        Show archive metadata
 EOF
             ;;
         *)
-            die "backup subcommand tidak dikenali: ${subcmd}"
+            die "Unknown backup subcommand: ${subcmd}"
             ;;
     esac
 }
@@ -997,7 +1009,7 @@ cmd_doctor() {
     elif docker compose -f "${COMPOSE_FILE}" config --services 2>/dev/null | grep -qx 'python'; then
         printf '[OK] python (via docker compose service)\n'
     else
-        printf '[MISSING] python3 (install di host atau aktifkan service python)\n'
+        printf '[MISSING] python3 (install on host or enable python service)\n'
         pass=0
     fi
 
@@ -1058,11 +1070,11 @@ cmd_lint() {
 
     if [[ ${show_help} -eq 1 ]]; then
         cat <<'EOF'
-Gunakan: c4ignite lint [opsi]
+Usage: c4ignite lint [options]
 
-Opsional:
-  --setup        Tambahkan script lint + install PHPCS (dev).
-  -y, --yes      Skip konfirmasi saat setup.
+Options:
+  --setup        Add lint script and install PHPCS (dev)
+  -y, --yes      Skip confirmation during setup
 EOF
         return 0
     fi
@@ -1079,11 +1091,11 @@ EOF
     local lint_script
     lint_script=$(lint_script_exists)
     if [[ "${lint_script}" != "yes" && ! phpcs_installed ]]; then
-        printf 'Lint belum dikonfigurasi. Jalankan "./scripts/c4ignite lint --setup" dulu.\n' >&2
+        printf 'Lint is not configured. Run "./scripts/c4ignite lint --setup" first.\n' >&2
         return 1
     fi
 
-    local lint_cmd="if [ -f composer.json ] && composer run-script --list | grep -q '^ *lint'; then composer run lint; elif [ -x vendor/bin/phpcs ]; then vendor/bin/phpcs app; else echo 'Lint belum dikonfigurasi. Jalankan \\\"./scripts/c4ignite lint --setup\\\".' >&2; exit 1; fi"
+    local lint_cmd="if [ -f composer.json ] && composer run-script --list | grep -q '^ *lint'; then composer run lint; elif [ -x vendor/bin/phpcs ]; then vendor/bin/phpcs app; else echo 'Lint is not configured. Run \\\"./scripts/c4ignite lint --setup\\\".' >&2; exit 1; fi"
     compose_exec "${APP_SERVICE}" bash -lc "${lint_cmd}"
 }
 
@@ -1257,6 +1269,7 @@ cmd_init() {
     local version="latest"
     local positional_version=""
     local force_download=0
+    local skip_install=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -1269,13 +1282,18 @@ cmd_init() {
                 force_download=1
                 shift
                 ;;
+            --no-install)
+                skip_install=1
+                shift
+                ;;
             --help|-h)
                 cat <<'EOF'
-Usage: c4ignite init [version] [--force-download]
+Usage: c4ignite init [version] [--force-download] [--no-install]
 
 Options:
   version             Optional tag/branch to download (defaults to latest release)
   --force-download    Ignore cached tarball and download again
+  --no-install        Skip running composer install after init
 EOF
                 return 0
                 ;;
@@ -1313,7 +1331,7 @@ EOF
             release_tag="${release_info%%|*}"
             tarball_url="${release_info#*|}"
         else
-            release_tag="$(latest_cached_appstarter)" || die "Tidak bisa mengambil metadata rilis dan cache belum tersedia."
+            release_tag="$(latest_cached_appstarter)" || die "Unable to retrieve release metadata and no cache available."
             printf 'Using cached CodeIgniter appstarter %s (offline)\n' "${release_tag}"
         fi
     else
@@ -1331,7 +1349,7 @@ EOF
         printf 'Using cached CodeIgniter appstarter %s\n' "${release_tag}"
     else
         if [[ -z "${tarball_url}" ]]; then
-            die "Arsip ${cache_file##*/} tidak ditemukan dan tidak bisa mengunduh (offline)."
+            die "Archive ${cache_file##*/} not found and cannot download (offline)."
         fi
         printf 'Downloading CodeIgniter appstarter %s...\n' "${release_tag}"
         download_tarball "${tarball_url}" "${cache_file}"
@@ -1380,7 +1398,17 @@ EOF
     rm -rf "${tmpdir}"
     trap - EXIT
 
-    printf '\nInit complete. Run "./scripts/c4ignite composer install" once containers are up.\n'
+    if [[ ${skip_install} -ne 1 ]]; then
+        printf '\nRunning composer install...\n'
+        if composer_install_noninteractive; then
+            printf 'Composer install completed.\n'
+        else
+            printf 'Composer install failed. Run "./scripts/c4ignite composer install" manually.\n'
+        fi
+        printf '\nInit complete. Stack is ready to run.\n'
+    else
+        printf '\nInit complete. Run "./scripts/c4ignite composer install" before starting.\n'
+    fi
 }
 
 write_xdebug_config() {
@@ -1461,12 +1489,12 @@ Commands:
   lint          Run project linting (composer script or phpcs fallback)
   audit         Run 'composer audit'
   build         Build production image (use -t/--tag, --push)
-  fresh         Bersihin container/volume (opsi --reinit untuk reset src/)
-  migrate       Jalankan php spark migrate
-  tinker        Masuk ke php spark shell
-  backup        Kelola backup src/ (create/list/restore/info)
-  setup shell   Wizard pasang alias + auto-complete ke shell
-  setup env     Kelola template .env (list/copy)
+  fresh         Clean containers/volumes (--reinit to rebuild src/)
+  migrate       Run php spark migrate
+  tinker        Enter php spark shell
+  backup        Manage src/ backups (create/list/restore/info)
+  setup shell   Wizard to install/remove aliases & auto-complete
+  setup env     Manage .env templates (list/copy)
   xdebug cmd    Manage xdebug (on|off|status)
 EOF
 }
