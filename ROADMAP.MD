@@ -11,7 +11,7 @@
 - Bikin `c4ignite doctor` buat ngecek dependency dev dan konflik port.
 
 ## Phase 3 – Developer Experience
-- Tambahin perintah QA: `c4ignite test`, `lint`, `audit` (optional coverage).
+- Tambahin perintah QA: `c4ignite test`, `lint` (optional coverage).
 - Sediakan toggle `c4ignite xdebug on/off` dan alias `c4ignite php/composer` biar eksekusi via container makin enak.
 - Kalau perlu, siapin konfigurasi override (profile) dan autocompletion bash/zsh.
 

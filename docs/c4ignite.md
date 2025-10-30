@@ -26,10 +26,8 @@
 - `logs [service]`: intip log semua service atau pilih salah satu.
 - `test …`: ngegas `vendor/bin/phpunit`.
 - `lint`: jalanin linting; pakai `./scripts/c4ignite lint --setup` sekali untuk tambahin script + PHPCS.
-- `audit …`: jalanin `composer audit`.
 - `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg` tersedia).
 - `fresh [--reinit]`: matiin stack + bersihin volume; kalau tambah `--reinit` sekalian reset `src/`.
-- `migrate …`: shortcut ke `php spark migrate` di dalam container.
 - `tinker …`: buka `php spark shell` buat uji cepat.
 - `backup create/list/restore/info`: utility backup/restore `src/` (support enkripsi, autosave).
 - `setup env list/copy`: manage template `.env` (development/staging/production/docker).
@@ -37,6 +35,12 @@
 - `doctor`: cek kesiapan environment lokal dan status port.
 - `xdebug [on|off|status]`: toggle Xdebug tanpa rebuild container.
 - `setup shell [opsi]`: wizard interaktif buat pasang alias + auto-complete (Bash/Zsh), dukung `--alias`, `--yes`, dan `--uninstall`.
+
+### Default shell tiap service
+- **php**: `/bin/bash` (biar nyaman buat develop di container app)
+- **mysql**: `/bin/sh` (bawaan image MariaDB)
+- **nginx**: `/bin/sh` (bawaan image Nginx resmi)
+- **python**: `/bin/sh` (image Python Alpine)
 
 ## Service & port default
 - Web app: http://localhost:8000 (Nginx serve `public/`).

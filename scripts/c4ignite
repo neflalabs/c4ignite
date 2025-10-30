@@ -12,7 +12,7 @@ XDEBUG_DEFAULT_HOST="${XDEBUG_CLIENT_HOST:-host.docker.internal}"
 XDEBUG_DEFAULT_PORT="${XDEBUG_CLIENT_PORT:-9003}"
 COMMANDS=(
     up down restart status pull shell spark composer php logs
-    init doctor test lint audit build xdebug fresh migrate backup setup
+    init doctor test lint build xdebug fresh backup setup
 )
 
 SETUP_MARK_START="# >>> c4ignite setup >>>"
@@ -394,11 +394,6 @@ EOF
         rm -rf "${APP_ROOT}" || die "failed to remove ${APP_ROOT}"
         "${SCRIPT_DIR}/c4ignite" init || die "reinitialisation failed"
     fi
-}
-
-cmd_migrate() {
-    require_service_running "${APP_SERVICE}"
-    compose_exec "${APP_SERVICE}" php spark migrate "$@"
 }
 
 ensure_lint_script() {
@@ -1153,11 +1148,6 @@ EOF
     compose_exec "${APP_SERVICE}" bash -lc "${lint_cmd}"
 }
 
-cmd_audit() {
-    require_service_running "${APP_SERVICE}"
-    compose_exec "${APP_SERVICE}" composer audit "$@"
-}
-
 cmd_build() {
     local tag="c4ignite-app:latest"
     local push=0
@@ -1542,10 +1532,8 @@ Commands:
   doctor        Run environment diagnostics
   test          Execute PHPUnit via the app container
   lint          Run project linting (composer script or phpcs fallback)
-  audit         Run 'composer audit'
   build         Build production image (use -t/--tag, --push)
   fresh         Clean containers/volumes (--reinit to rebuild src/)
-  migrate       Run php spark migrate
   backup        Manage src/ backups (create/list/restore/info)
   setup shell   Wizard to install/remove aliases & auto-complete
   setup env     Manage .env templates (list/copy)
@@ -1572,10 +1560,8 @@ main() {
         doctor) cmd_doctor "$@" ;;
         test) cmd_test "$@" ;;
         lint) cmd_lint "$@" ;;
-        audit) cmd_audit "$@" ;;
         build) cmd_build "$@" ;;
         fresh) cmd_fresh "$@" ;;
-        migrate) cmd_migrate "$@" ;;
         backup) cmd_backup "$@" ;;
         setup) cmd_setup "$@" ;;
         xdebug) cmd_xdebug "$@" ;;
