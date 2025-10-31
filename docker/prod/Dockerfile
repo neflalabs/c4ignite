@@ -55,6 +55,12 @@ ENV CI_ENVIRONMENT=production \
     PHP_OPCACHE_MEMORY_CONSUMPTION=256 \
     PHP_OPCACHE_INTERNED_STRINGS_BUFFER=16
 
+LABEL org.opencontainers.image.authors="Nefla <neflaprojekt@gmail.com>" \
+      org.opencontainers.image.vendor="C4ignite by NeflaLabs" \
+      org.opencontainers.image.source="https://github.com/neflalabs/c4ignite" \
+      org.opencontainers.image.title="C4ignite App" \
+      org.opencontainers.image.description="Codeigniter 4 with C4ignite builder"
+
 EXPOSE 8000
 
 CMD ["/entrypoint.sh"]

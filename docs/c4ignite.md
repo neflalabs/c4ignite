@@ -25,7 +25,7 @@
 - `composer …`: larikan Composer di container PHP (langsung di `/var/www/html`).
 - `logs [service]`: intip log semua service atau pilih salah satu.
 - `lint`: jalanin linting; pakai `./scripts/c4ignite lint --setup` sekali untuk tambahin script + PHPCS.
-- `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg`, `--no-cache` tersedia).
+- `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive` tersedia).
 - `fresh [--reinit]`: matiin stack + bersihin volume; kalau tambah `--reinit` sekalian reset `src/`.
 - `tinker …`: buka `php spark shell` buat uji cepat.
 - `backup create/list/restore/info`: utility backup/restore `src/` (support enkripsi, autosave).

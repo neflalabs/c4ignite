@@ -38,6 +38,11 @@ _c4ignite_complete() {
             COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
             return 0
             ;;
+        build)
+            local opts="--tag -t --push --build-arg --build-arg= --no-cache --interactive -i"
+            COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+            return 0
+            ;;
         fresh)
             local opts="--reinit --help -h"
             COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
@@ -58,7 +63,7 @@ _c4ignite_complete() {
             fi
             case "${COMP_WORDS[2]}" in
                 shell)
-                    local opts="--shell --alias --uninstall --yes -y"
+                    local opts="--shell --alias --refresh --uninstall --yes -y"
                     COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
                     return 0
                     ;;

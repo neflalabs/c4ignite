@@ -152,6 +152,28 @@ prompt_yes_no() {
     done
 }
 
+prompt_with_default() {
+    local prompt="$1"
+    local default="$2"
+    local value=""
+
+    if [[ ! -t 0 ]]; then
+        printf '%s\n' "${default}"
+        return 0
+    fi
+
+    while true; do
+        read -r -p "${prompt} [${default}] " value || value=""
+        value="${value:-${default}}"
+        if [[ -z "${value// }" ]]; then
+            printf 'Value cannot be empty.\n'
+            continue
+        fi
+        printf '%s\n' "${value}"
+        return 0
+    done
+}
+
 remove_setup_block() {
     local file="$1"
     [[ -f "${file}" ]] || return 0
@@ -236,6 +258,156 @@ fi
 ${SETUP_MARK_END}
 EOF
     fi
+}
+
+emit_completion_refresh_commands() {
+    local shell="$1"
+    local completion_file="$2"
+
+    cat <<EOF
+if [ -f "${completion_file}" ]; then
+  source "${completion_file}"
+fi
+EOF
+
+    if [[ "${shell}" == "zsh" ]]; then
+        cat <<'EOF'
+if command -v compinit >/dev/null 2>&1; then
+  autoload -U compinit && compinit
+fi
+EOF
+    fi
+}
+
+build_interactive_flow() {
+    local initial_tag="${1:-c4ignite-app:latest}"
+    local initial_push="${2:-0}"
+    local initial_no_cache="${3:-0}"
+
+    if [[ ! -t 0 ]]; then
+        die "Interactive build requires an interactive terminal."
+    fi
+
+    local default_image="${initial_tag}"
+    local default_tag="latest"
+    if [[ "${initial_tag}" == *:* ]]; then
+        default_image="${initial_tag%:*}"
+        default_tag="${initial_tag##*:}"
+    fi
+
+    if [[ -z "${default_image}" ]]; then
+        default_image="c4ignite-app"
+    fi
+    if [[ -z "${default_tag}" ]]; then
+        default_tag="latest"
+    fi
+
+    printf '=== c4ignite build (interactive) ===\n'
+    local image_name=""
+    while true; do
+        image_name="$(prompt_with_default "Image name (repository, without tag)" "${default_image}")"
+        if [[ "${image_name}" =~ [[:space:]] ]]; then
+            printf 'Image name cannot contain spaces.\n'
+            continue
+        fi
+        break
+    done
+
+    local image_tag=""
+    while true; do
+        image_tag="$(prompt_with_default "Tag" "${default_tag}")"
+        if [[ "${image_tag}" =~ [[:space:]] ]]; then
+            printf 'Tag cannot contain spaces.\n'
+            continue
+        fi
+        if [[ "${image_tag}" == *":"* ]]; then
+            printf 'Tag should not contain ":". Provide the tag only.\n'
+            continue
+        fi
+        break
+    done
+
+    local push_default="n"
+    [[ ${initial_push} -eq 1 ]] && push_default="y"
+    local push_choice=0
+    if prompt_yes_no "Push to registry after build?" "${push_default}"; then
+        push_choice=1
+    fi
+
+    local no_cache_default="n"
+    [[ ${initial_no_cache} -eq 1 ]] && no_cache_default="y"
+    local no_cache_choice=0
+    if prompt_yes_no "Disable build cache (docker build --no-cache)?" "${no_cache_default}"; then
+        no_cache_choice=1
+    fi
+
+    local -a args=()
+    if prompt_yes_no "Add build arguments (KEY=VALUE)?" "n"; then
+        printf 'Enter build arguments one per line (KEY=VALUE). Leave empty to finish.\n'
+        while true; do
+            local arg=""
+            read -r -p "  build-arg: " arg || arg=""
+            if [[ -z "${arg}" ]]; then
+                break
+            fi
+            if [[ "${arg}" != *"="* ]]; then
+                printf '  Invalid format. Expected KEY=VALUE.\n'
+                continue
+            fi
+            args+=("--build-arg" "${arg}")
+        done
+    fi
+
+    local full_tag="${image_name}:${image_tag}"
+    local -a preview=(docker build -f "${PROJECT_ROOT}/docker/prod/Dockerfile" -t "${full_tag}")
+    if [[ ${no_cache_choice} -eq 1 ]]; then
+        preview+=(--no-cache)
+    fi
+    if [[ ${#args[@]} -gt 0 ]]; then
+        preview+=("${args[@]}")
+    fi
+    preview+=("${PROJECT_ROOT}")
+
+    printf '\nSummary:\n'
+    printf '  Image     : %s\n' "${full_tag}"
+    printf '  Push      : %s\n' "$([[ ${push_choice} -eq 1 ]] && printf 'yes' || printf 'no')"
+    printf '  No-cache  : %s\n' "$([[ ${no_cache_choice} -eq 1 ]] && printf 'yes' || printf 'no')"
+    if [[ ${#args[@]} -gt 0 ]]; then
+        printf '  Build args:\n'
+        local idx=1
+        for ((i=0; i<${#args[@]}; i+=2)); do
+            printf '    %d) %s %s\n' "${idx}" "${args[i]}" "${args[i+1]}"
+            idx=$((idx + 1))
+        done
+    else
+        printf '  Build args: none\n'
+    fi
+    printf '  Command   :'
+    for part in "${preview[@]}"; do
+        printf ' %q' "${part}"
+    done
+    printf '\n'
+    if [[ ${push_choice} -eq 1 ]]; then
+        printf '  Follow-up : docker push %s\n' "${full_tag}"
+    fi
+    printf '\n'
+
+    if ! prompt_yes_no "Proceed with build?" "y"; then
+        printf 'Build cancelled.\n'
+        return 1
+    fi
+
+    BUILD_INTERACTIVE_TAG="${full_tag}"
+    BUILD_INTERACTIVE_PUSH=${push_choice}
+    BUILD_INTERACTIVE_NO_CACHE=${no_cache_choice}
+    BUILD_INTERACTIVE_ARGS=()
+    if [[ ${#args[@]} -gt 0 ]]; then
+        for element in "${args[@]}"; do
+            BUILD_INTERACTIVE_ARGS+=("${element}")
+        done
+    fi
+
+    return 0
 }
 
 ensure_requirements() {
@@ -824,6 +996,7 @@ cmd_setup_shell() {
     local alias_name="c4ignite"
     local uninstall=0
     local assume_yes=0
+    local refresh=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -836,6 +1009,10 @@ cmd_setup_shell() {
                 [[ $# -ge 2 ]] || die "--alias requires a name"
                 alias_name="$2"
                 shift 2
+                ;;
+            --refresh)
+                refresh=1
+                shift
                 ;;
             --uninstall)
                 uninstall=1
@@ -852,6 +1029,7 @@ Usage: c4ignite setup shell [options]
 Options:
   --shell bash|zsh   Force target shell (defaults to $SHELL)
   --alias NAME       Alias to install (default: c4ignite)
+  --refresh          Output commands to reload completion in current shell
   --uninstall        Remove previously installed configuration
   -y, --yes          Skip confirmation
 EOF
@@ -886,6 +1064,33 @@ EOF
         rc_file="${HOME}/.bashrc"
     else
         rc_file="${HOME}/.zshrc"
+    fi
+
+    if [[ ${refresh} -eq 1 && ${uninstall} -eq 1 ]]; then
+        die "--refresh cannot be combined with --uninstall"
+    fi
+
+    if [[ ${refresh} -eq 1 ]]; then
+        local completion_file
+        if [[ "${shell}" == "bash" ]]; then
+            completion_file="${COMPLETIONS_DIR}/c4ignite.bash"
+        else
+            completion_file="${COMPLETIONS_DIR}/c4ignite.zsh"
+        fi
+
+        if [[ ! -f "${completion_file}" ]]; then
+            die "Completion file not found at ${completion_file}. Run 'c4ignite setup shell' first."
+        fi
+
+        if [[ -t 1 ]]; then
+            printf 'Current shell cannot be modified directly by this command.\n'
+            printf 'Run this to refresh completion in-place:\n'
+            printf '  eval "$("%s" setup shell --refresh)"\n' "${C4IGNITE_BIN}"
+            printf 'Or source %s manually.\n' "${completion_file}"
+        else
+            emit_completion_refresh_commands "${shell}" "${completion_file}"
+        fi
+        return 0
     fi
 
     if [[ ${uninstall} -eq 1 ]]; then
@@ -1161,6 +1366,7 @@ cmd_build() {
     local push=0
     local build_args=()
     local no_cache=0
+    local interactive=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -1190,11 +1396,29 @@ cmd_build() {
                 no_cache=1
                 shift
                 ;;
+            --interactive|-i)
+                interactive=1
+                shift
+                ;;
             *)
                 die "Unknown build option: $1"
                 ;;
         esac
     done
+
+    if [[ ${interactive} -eq 1 ]]; then
+        if ! build_interactive_flow "${tag}" "${push}" "${no_cache}"; then
+            return 1
+        fi
+        tag="${BUILD_INTERACTIVE_TAG}"
+        push="${BUILD_INTERACTIVE_PUSH}"
+        no_cache="${BUILD_INTERACTIVE_NO_CACHE}"
+        build_args=()
+        if [[ "${BUILD_INTERACTIVE_ARGS+x}" == "x" ]]; then
+            build_args=("${BUILD_INTERACTIVE_ARGS[@]}")
+        fi
+        unset BUILD_INTERACTIVE_TAG BUILD_INTERACTIVE_PUSH BUILD_INTERACTIVE_NO_CACHE BUILD_INTERACTIVE_ARGS
+    fi
 
     local -a docker_cmd=(
         docker build

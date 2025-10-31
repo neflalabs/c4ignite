@@ -34,6 +34,10 @@ _c4ignite() {
       _arguments '*:options:(--version --force-download --force --no-install --help -h)'
       return
       ;;
+    build)
+      _arguments '*:options:(--tag -t --push --build-arg --build-arg= --no-cache --interactive -i)'
+      return
+      ;;
     fresh)
       _arguments '*:options:(--reinit --help -h)'
       return
@@ -53,7 +57,7 @@ _c4ignite() {
       fi
       case "$words[3]" in
         shell)
-          _arguments '*:options:(--shell --alias --uninstall --yes -y)'
+          _arguments '*:options:(--shell --alias --refresh --uninstall --yes -y)'
           return
           ;;
         env)
