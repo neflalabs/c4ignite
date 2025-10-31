@@ -4,7 +4,7 @@
 
 ---
 
-## <img src="docs/img/bahlil.gif" alt="bahlil" width="80" height="100%"> C4ignite — Chill toolkit for CodeIgniter 4 with Laravel Sail energy
+## <img src="docs/img/bahlil.gif" alt="bahlil" width="80" height="100%"> C4ignite — Toolkit for CodeIgniter 4 with Laravel Sail energy
 
 C4ignite spins up a lightweight, fully Dockerized CodeIgniter 4 workspace so you can ship faster with zero local-env drama.
 
