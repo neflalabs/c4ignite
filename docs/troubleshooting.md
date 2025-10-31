@@ -11,7 +11,7 @@ Gas `./scripts/c4ignite doctor` buat cek port mana yang bentrok, terus matiin se
 
 ### Build pertama lama banget
 Wajar banget karena lagi download base image sama dependency. Bisa akalin dengan sharing cache/image ke temen tim atau sediain image pre-built di registry internal.
-Kalau udah punya image sendiri, tinggal set `C4IGNITE_PHP_IMAGE=ghcr.io/neflalabs/c4ignite-dev:latest` lalu `docker compose pull php` sebelum `./scripts/c4ignite up`.
+Kalau udah punya image sendiri, tinggal push ke registry tim, `docker compose pull php`, terus jalankan `./scripts/c4ignite up` supaya stack langsung pakai image yang udah siap pakai.
 
 ### Composer cache rewel
 Pastikan `COMPOSER_HOME` bisa ditulis. Stack dev udah sediain volume cache, tapi kalau masih berulah, coba `./scripts/c4ignite composer clear-cache`.

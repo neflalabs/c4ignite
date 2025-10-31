@@ -73,7 +73,6 @@ C4ignite bantu kamu bikin lingkungan pengembangan CodeIgniter 4 yang ringan, cep
 
 - Panduan umum: [`docs/c4ignite.md`](docs/c4ignite.md)
 - Troubleshooting: [`docs/troubleshooting.md`](docs/troubleshooting.md)
-- Workflow & rilis: [`docs/RELEASE.md`](docs/RELEASE.md)
 
 ---
 

@@ -13,7 +13,6 @@
 3. Edit `src/.env` atau `src/.env.docker` sesuai kebutuhan. Kalau belum ada, init bakal bikinin otomatis.
 4. Nyalain stack via `./scripts/c4ignite up` (tambah `--build` kalau mau rebuild image lokal); `./scripts/c4ignite init` sudah otomatis menjalankan `composer install` (lewati dengan `--no-install`).
    - Kalau kena limit API GitHub, set `GH_TOKEN` (PAT read-only) sebelum panggil `c4ignite init`.
-   - Punya image pra-build? Set `C4IGNITE_PHP_IMAGE=ghcr.io/neflalabs/c4ignite-dev:latest` terus `docker compose pull php` supaya container pakai image siap pakai.
 5. Opsional: jalankan `./scripts/c4ignite setup env copy dev` (atau `staging`/`prod`/`docker`) buat nurunin template `.env`.
 6. Opsional: jalankan `./scripts/c4ignite setup shell` biar alias dan auto-complete langsung aktif.
 
@@ -25,7 +24,7 @@
 - `composer …`: larikan Composer di container PHP (langsung di `/var/www/html`).
 - `logs [service]`: intip log semua service atau pilih salah satu.
 - `lint`: jalanin linting; pakai `./scripts/c4ignite lint --setup` sekali untuk tambahin script + PHPCS.
-- `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive` tersedia).
+- `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive` tersedia). Pakai `--interactive` kalau mau pilih tag/push/build-arg lewat prompt.
 - `fresh [--reinit]`: matiin stack + bersihin volume; kalau tambah `--reinit` sekalian reset `src/`.
 - `tinker …`: buka `php spark shell` buat uji cepat.
 - `backup create/list/restore/info`: utility backup/restore `src/` (support enkripsi, autosave).
@@ -54,10 +53,10 @@
 - Mau debug pakai Xdebug? Set `PHP_IDE_CONFIG` plus host/port di `src/.env`, bisa override pakai env `XDEBUG_CLIENT_HOST/PORT`, lalu toggle `./scripts/c4ignite xdebug on`.
 - Sebelum pull perubahan gede, mending `./scripts/c4ignite down` dulu supaya nggak ke-lock volume.
 - Pengguna VSCode bisa langsung pakai setup di `.devcontainer/` dan `.vscode/`.
-- Pake CI/CD? Workflow contoh ada di `.github/workflows/` dan panduan rilis di `docs/RELEASE.md`.
+- Pake CI/CD? Workflow contoh ada di `.github/workflows/`.
 - Kalau ada masalah, langsung cek `docs/troubleshooting.md`.
 - `./scripts/c4ignite init` otomatis ngaktipin `CI_ENVIRONMENT = development` dan bikin `.env.docker` default kalau belum ada.
-- Mau alias & auto-complete? Jalankan wizard `./scripts/c4ignite setup shell` (bisa install/uninstall buat Bash/Zsh), habis itu `source ~/.bashrc` atau `source ~/.zshrc` supaya langsung aktif.
+- Mau alias & auto-complete? Jalankan wizard `./scripts/c4ignite setup shell` (bisa install/uninstall buat Bash/Zsh), habis itu `source ~/.bashrc` atau `source ~/.zshrc` supaya langsung aktif. Perlu refresh tanpa buka shell baru? `eval "$(./scripts/c4ignite setup shell --refresh)"`.
 
 ## Backup & bagi-bagi skeleton
 - Gunakan `./scripts/c4ignite backup create [opsi]` buat bikin arsip `src/` (default exclude vendor/writable). Tambahkan `--encrypt` kalau mau pakai passphrase.
