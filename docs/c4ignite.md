@@ -1,77 +1,77 @@
 # c4ignite Handbook
 
-## Syarat dasar
+## Prerequisites
 
-- Punya Docker + Docker Compose v2.
-- Shell yang ada `curl` dan `tar` (Python disiapkan lewat container `python`).
-- Bonus kalau ada `rsync`, bikin proses init makin cepat.
+- Docker plus Docker Compose v2.
+- A shell with `curl` and `tar` (Python tooling ships via the `python` container).
+- `rsync` is optional but speeds up the first init.
 
-## Cara bootstrap project
+## Bootstrapping your project
 
-1. Pastikan folder `src/app/Config/App.php` belum ada (repo ini emang sengaja kosongin `src/`).
-2. Jalanin `./scripts/c4ignite init` biar AppStarter terbaru diambil ke folder `src/` (folder ini nggak ikut ke git).
-   - Tarball yang sudah kebawa bakal di-cache di `backups/cache/`, jadi init berikutnya cukup ekstrak ulang.
-   - Mau paksa download ulang? Tambahin `--force-download`.
-3. Edit `src/.env` atau `src/.env.docker` sesuai kebutuhan. Kalau belum ada, init bakal bikinin otomatis.
-4. Nyalain stack via `./scripts/c4ignite up` (tambah `--build` kalau mau rebuild image lokal); `./scripts/c4ignite init` sudah otomatis menjalankan `composer install` (lewati dengan `--no-install`).
-   - Kalau kena limit API GitHub, set `GH_TOKEN` (PAT read-only) sebelum panggil `c4ignite init`.
-5. Opsional: jalankan `./scripts/c4ignite setup env copy dev` (atau `staging`/`prod`/`docker`) buat nurunin template `.env`.
-6. Opsional: jalankan `./scripts/c4ignite setup shell` biar alias dan auto-complete langsung aktif.
+1. Make sure `src/app/Config/App.php` does not exist (the repo intentionally keeps `src/` empty).
+2. Run `./scripts/c4ignite init` to pull the latest AppStarter into `src/` (still ignored by git).
+   - The downloaded tarball is cached in `backups/cache/`, so subsequent runs just extract.
+   - Add `--force-download` if you want to refresh the tarball.
+3. Tweak `src/.env` or `src/.env.docker` to taste. If they’re missing, the init step generates them.
+4. Bring the stack online with `./scripts/c4ignite up` (add `--build` to rebuild the local image). The init already runs `composer install` unless you pass `--no-install`.
+   - Smash the GitHub API rate limit? Set `GH_TOKEN` (read-only PAT) before running `c4ignite init`.
+5. Optional: `./scripts/c4ignite setup env copy dev` (or `staging` / `prod` / `docker`) to pull in a template `.env`.
+6. Optional: `./scripts/c4ignite setup shell` to drop aliases and autocompletion straight into your shell.
 
-## Cheat sheet perintah CLI
+## CLI cheat sheet
 
-- `up | down | restart | status`: ngatur hidup matinya service Docker.
-- `shell [service]`: masuk ke shell container tertentu (default `php`).
-- `php …`: jalankan command PHP CLI di container (otomatis di `/var/www/html`), misal `./scripts/c4ignite php -v`.
-- `spark …`: akses `php spark` di dalam container PHP.
-- `composer …`: larikan Composer di container PHP (langsung di `/var/www/html`).
-- `logs [service]`: intip log semua service atau pilih salah satu.
-- `lint`: jalanin linting; pakai `./scripts/c4ignite lint --setup` sekali untuk tambahin script + PHPCS.
-- `build [opsi]`: build image produksi (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive` tersedia). Pakai `--interactive` kalau mau pilih tag/push/build-arg lewat prompt.
-- `fresh [--reinit]`: matiin stack + bersihin volume; kalau tambah `--reinit` sekalian reset `src/`.
-- `backup create/list/restore/info`: utility backup/restore `src/` (support enkripsi, autosave).
-- `setup env list/copy`: manage template `.env` (development/staging/production/docker).
-- `init [tag] [--force-download]`: download AppStarter (default ke versi terbaru; `--force-download` buat abaikan cache).
-- `doctor`: cek kesiapan environment lokal dan status port.
-- `xdebug [on|off|status]`: toggle Xdebug tanpa rebuild container.
-- `setup shell [opsi]`: wizard interaktif buat pasang alias + auto-complete (Bash/Zsh), dukung `--alias`, `--yes`, dan `--uninstall`.
+- `up | down | restart | status`: manage Docker services.
+- `shell [service]`: hop into a container shell (defaults to `php`).
+- `php …`: run PHP CLI inside the container (cwd is `/var/www/html`).
+- `spark …`: proxy `php spark`.
+- `composer …`: run Composer within the app container.
+- `logs [service]`: tail logs for all services or a specific one.
+- `lint`: run linting; first bootstrap via `./scripts/c4ignite lint --setup`.
+- `build [options]`: build the production image (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive`). Use `--interactive` for a guided prompt (tag, push, build args).
+- `fresh [--reinit]`: stop the stack, wipe volumes, and optionally reset `src/`.
+- `backup create/list/restore/info`: manage encrypted/unencrypted `src/` backups.
+- `setup env list/copy`: list or copy `.env` templates (dev/staging/prod/docker).
+- `init [tag] [--force-download]`: grab AppStarter (latest by default).
+- `doctor`: check local prerequisites and port collisions.
+- `xdebug [on|off|status]`: toggle Xdebug without rebuilding.
+- `setup shell [options]`: interactive wizard for aliases + completions (Bash/Zsh). Supports `--alias`, `--yes`, and `--uninstall`.
 
-### Default shell tiap service
+### Default shell per service
 
-- **php**: `/bin/bash` (biar nyaman buat develop di container app)
-- **mysql**: `/bin/sh` (bawaan image MariaDB)
-- **nginx**: `/bin/sh` (bawaan image Nginx resmi)
-- **python**: `/bin/sh` (image Python Alpine)
+- **php**: `/bin/bash`
+- **mysql**: `/bin/sh`
+- **nginx**: `/bin/sh`
+- **python**: `/bin/sh`
 
-## Service & port default
+## Default services & ports
 
-- Web app: http://localhost:8000 (Nginx serve `public/`).
-- MySQL: `127.0.0.1:33060` user/pass `app/secret`.
+- Web app: http://localhost:8000 (Nginx serves `public/`).
+- MySQL: `127.0.0.1:33060` with credentials `app/secret`.
 - Redis: `127.0.0.1:63790`.
 - Mailhog UI: http://localhost:8025.
 
-## Tips ringan
+## Quick tips
 
-- Semua source CodeIgniter kita taruh di `src/`; volume container juga ke sana.
-- Ekspor `HOST_UID`/`HOST_GID` sebelum `c4ignite up` biar permission aman:  
-  `export HOST_UID=$(id -u)` dan `export HOST_GID=$(id -g)`.
-- Mau debug pakai Xdebug? Set `PHP_IDE_CONFIG` plus host/port di `src/.env`, bisa override pakai env `XDEBUG_CLIENT_HOST/PORT`, lalu toggle `./scripts/c4ignite xdebug on`.
-- Sebelum pull perubahan gede, mending `./scripts/c4ignite down` dulu supaya nggak ke-lock volume.
-- Pengguna VSCode bisa langsung pakai setup di `.devcontainer/` dan `.vscode/`.
-- Pake CI/CD? Workflow contoh ada di `.github/workflows/`.
-- Kalau ada masalah, langsung cek `docs/troubleshooting.md`.
-- `./scripts/c4ignite init` otomatis ngaktipin `CI_ENVIRONMENT = development` dan bikin `.env.docker` default kalau belum ada.
-- Mau alias & auto-complete? Jalankan wizard `./scripts/c4ignite setup shell` (bisa install/uninstall buat Bash/Zsh), habis itu `source ~/.bashrc` atau `source ~/.zshrc` supaya langsung aktif. Perlu refresh tanpa buka shell baru? `eval "$(./scripts/c4ignite setup shell --refresh)"`.
+- All project code lives in `src/`; containers mount the same directory.
+- Export `HOST_UID` / `HOST_GID` before `c4ignite up` to keep permissions chill:
+  `export HOST_UID=$(id -u)` and `export HOST_GID=$(id -g)`.
+- Need Xdebug? Configure `PHP_IDE_CONFIG` + host/port in `src/.env`, override with `XDEBUG_CLIENT_HOST/PORT` if needed, then run `./scripts/c4ignite xdebug on`.
+- Pulling a big change? Drop the stack with `./scripts/c4ignite down` so volumes don’t get cranky.
+- VS Code users can lean on `.devcontainer/` and `.vscode/`.
+- Looking at CI/CD? Example workflows live in `.github/workflows/`.
+- Trouble? Hit `docs/troubleshooting.md`.
+- `./scripts/c4ignite init` defaults `CI_ENVIRONMENT` to `development` and generates `.env.docker` if it’s missing.
+- Run `./scripts/c4ignite setup shell` to install/uninstall aliases + completions; source your shell rc afterward, or shortcut with `eval "$(./scripts/c4ignite setup shell --refresh)"`.
 
-## Backup & bagi-bagi skeleton
+## Backup & share the skeleton
 
-- Gunakan `./scripts/c4ignite backup create [opsi]` buat bikin arsip `src/` (default exclude vendor/writable). Tambahkan `--encrypt` kalau mau pakai passphrase.
-- Mau lihat daftar backup? `./scripts/c4ignite backup list`. Info detail: `./scripts/c4ignite backup info <file>`.
-- Restore dari dev lain: `./scripts/c4ignite backup restore --file path/to/arsip` (bakal minta konfirmasi, bisa auto-backup kondisi lama). Tambahkan `--interactive` buat pilih arsip langsung dari daftar di folder `backups/`.
-- Perlu image dev pra-build? `docker compose -f docker/dev/docker-compose.yml build php` lalu simpan dengan `docker save` sebelum dibagikan.
+- `./scripts/c4ignite backup create [options]` archives `src/` (vendor/writable excluded by default). Add `--encrypt` to use a passphrase.
+- See what’s available via `./scripts/c4ignite backup list`. Inspect details with `./scripts/c4ignite backup info <file>`.
+- Restore from a teammate using `./scripts/c4ignite backup restore --file path/to/archive` (auto-backup prompt included). Add `--interactive` to pick from the list in `backups/`.
+- Have a pre-built dev image? `docker compose -f docker/dev/docker-compose.yml build php` then `docker save` before sharing.
 
-## Build buat produksi
+## Production build flow
 
-- `./scripts/c4ignite build -t registry.example.com/ci4-app:latest` bakal bikin image produksi berdasarkan `docker/prod/Dockerfile`.
-- Mau langsung kirim ke registry? Tambahin `--push` (jangan lupa `docker login` dulu).
-- Perlu override ARG/ENV? Pakai `--build-arg KEY=VALUE`, contoh `--build-arg APP_BASE_URL=https://app.example.com`.
+- `./scripts/c4ignite build -t registry.example.com/ci4-app:latest` builds the production image using `docker/prod/Dockerfile`.
+- Want to push right away? Slip in `--push` (and make sure you’re logged in).
+- Need build overrides? Use `--build-arg KEY=VALUE`, e.g. `--build-arg APP_BASE_URL=https://app.example.com`.

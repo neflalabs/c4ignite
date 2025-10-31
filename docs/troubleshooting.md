@@ -1,27 +1,27 @@
-# Troubleshooting santai
+# Troubleshooting (keep it calm)
 
-## Masalah yang sering muncul
+## Common hiccups
 
-### Permission denied di `src/`
-Kalau `./scripts/c4ignite init` komplain soal izin, artinya folder `src/` lagi dimiliki root. Skrip sekarang sudah coba betulin otomatis pake container Alpine, tapi kalau masih ngeyel tinggal jalanin `sudo chown -R $(id -u):$(id -g) src` atau sekalian `./scripts/c4ignite fresh --reinit` buat reset total.
-Lari di environment yang nggak punya Docker? Set `C4IGNITE_SKIP_DOCKER_FIX=1` sebelum jalanin perintahnya biar langkah perbaikan otomatis dilewati.
+### Permission denied under `src/`
+If `./scripts/c4ignite init` gripes about permissions, the `src/` directory is probably owned by root. The script attempts to patch it using a tiny Alpine container, but if it still acts up, run `sudo chown -R $(id -u):$(id -g) src` or nuke it with `./scripts/c4ignite fresh --reinit`.
+Running somewhere without Docker? Export `C4IGNITE_SKIP_DOCKER_FIX=1` before the command so the auto-fix step is skipped.
 
-### Port udah dipakai service lain
-Gas `./scripts/c4ignite doctor` buat cek port mana yang bentrok, terus matiin service yang ngeribetin.
+### Ports already claimed
+Run `./scripts/c4ignite doctor` to see what’s hogging your ports, then shut down the culprit.
 
-### Build pertama lama banget
-Wajar banget karena lagi download base image sama dependency. Bisa akalin dengan sharing cache/image ke temen tim atau sediain image pre-built di registry internal.
-Kalau udah punya image sendiri, tinggal push ke registry tim, `docker compose pull php`, terus jalankan `./scripts/c4ignite up` supaya stack langsung pakai image yang udah siap pakai.
+### First build takes forever
+Totally normal—base images and dependencies are hefty. Speed it up by sharing caches/images with the squad or hosting a pre-built variant in your registry.
+If you already have an image, push it to the team registry, run `docker compose pull php`, then launch `./scripts/c4ignite up` so the stack starts with the pre-baked image.
 
-### Composer cache rewel
-Pastikan `COMPOSER_HOME` bisa ditulis. Stack dev udah sediain volume cache, tapi kalau masih berulah, coba `./scripts/c4ignite composer clear-cache`.
+### Composer cache throwing shade
+Make sure `COMPOSER_HOME` is writable. The dev stack mounts a cache volume; if it still misbehaves, try `./scripts/c4ignite composer clear-cache`.
 
-### Xdebug nggak nendang
-Pastikan udah `./scripts/c4ignite xdebug on`, IDE listen di port 9003, dan setting host di `src/.env` cocok (apalagi kalau kamu pakai WSL/VM).
+### Xdebug not hitting breakpoints
+Toggle it on with `./scripts/c4ignite xdebug on`, ensure your IDE listens on port 9003, and verify host settings inside `src/.env` (especially for WSL/VM setups).
 
-## FAQ singkat
+## Quick FAQ
 
-- **Bisa re-bootstrap framework?** Bisa banget. Kosongin aja `src/` (atau hapus sekalian) terus jalankan `./scripts/c4ignite init`. Folder ini memang di-ignore git.
-- **Gimana build image produksi?** Tinggal `./scripts/c4ignite build -t your/image:tag`.
-- **Alias & auto-complete gimana?** Jalankan `./scripts/c4ignite setup shell` (ada opsi `--uninstall` kalau mau bersih-bersih).
-- **Harus pakai Docker Desktop?** Nggak wajib. Semua Docker Engine 20.x+ oke, yang penting Compose v2 tersedia.
+- **Can I re-bootstrap the framework?** Yup. Empty out `src/` (or delete it) and run `./scripts/c4ignite init`. The directory is git-ignored by design.
+- **How do I build a production image?** Run `./scripts/c4ignite build -t your/image:tag`.
+- **Where do alias & autocomplete live?** Use `./scripts/c4ignite setup shell` (with `--uninstall` for cleanup).
+- **Do I need Docker Desktop?** Nope. Any Docker Engine 20.x+ works—as long as Compose v2 is available.

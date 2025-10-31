@@ -4,35 +4,35 @@
 
 ---
 
-## 🚀 C4ignite — Toolkit santai buat ngerjain CodeIgniter 4 dengan rasa Laravel Sail
+## 🚀 C4ignite — Chill toolkit for CodeIgniter 4 with Laravel Sail energy
 
-C4ignite bantu kamu bikin lingkungan pengembangan CodeIgniter 4 yang ringan, cepat, dan siap pakai — full Dockerized seperti Laravel Sail.
+C4ignite spins up a lightweight, fully Dockerized CodeIgniter 4 workspace so you can ship faster with zero local-env drama.
 
 ---
 
-### ⚙️ Fitur & Perintah Utama
+### ⚙️ Core commands, nice and breezy
 
 - **Bootstrap CI4 AppStarter**  
-  Jalankan:  
+  Run:  
   `./scripts/c4ignite init`
 
-  Buat skeleton CI4 (AppStarter) muncul di folder `src/` — folder ini sengaja di-ignore supaya repo tetap bersih.
+  Drops the AppStarter skeleton into `src/` (git-ignored on purpose).
 
-  - Tarball AppStarter otomatis di-cache di `backups/cache/`, jadi init berikutnya tinggal ekstrak ulang.
-  - Gunakan `--force-download` kalau mau refresh AppStarter.
-  - Setelah bootstrap, `composer install` akan otomatis dijalankan (bisa dilewati dengan `--no-install`).
+  - Cache lands in `backups/cache/`, so re-runs just extract.
+  - Add `--force-download` when you want a fresh tarball.
+  - Skip `composer install` with `--no-install` if you’re offline or already set.
 
-- **Jalankan stack dev lengkap**  
-  Hidupkan PHP, Nginx, MariaDB, Redis, dan Mailhog:
+- **Spin up the full dev stack**  
+  Brings up PHP, Nginx, MariaDB, Redis, and Mailhog:
 
   ```
   ./scripts/c4ignite up
   ```
 
-  Tambah `--build` kalau mau rebuild image lokal.
+  Toss in `--build` when you want to rebuild the local image.
 
-- **Shortcut siap pakai**  
-  Beberapa perintah berguna:
+- **Handy shortcuts**  
+  Your daily drivers:
 
   ```
   ./scripts/c4ignite lint
@@ -40,42 +40,42 @@ C4ignite bantu kamu bikin lingkungan pengembangan CodeIgniter 4 yang ringan, cep
   ./scripts/c4ignite build
   ```
 
-  Jalankan `./scripts/c4ignite lint --setup` sekali biar lint siap dipakai.  
-  Mau build dengan panduan? Pakai `./scripts/c4ignite build --interactive` untuk pilih tag, opsi push, dan build-arg secara interaktif.
+  Prime linting once with `./scripts/c4ignite lint --setup`.  
+  Want a guided image build? Hit `./scripts/c4ignite build --interactive` to pick tags, push, and build args from a prompt.
 
-- **Auto-complete & alias shell**  
-  Aktifkan dengan:
+- **Shell autocomplete & alias**  
+  Install the snippet:
 
   ```
   ./scripts/c4ignite setup shell
-  source ~/.bashrc   # atau ~/.zshrc
+  source ~/.bashrc   # or ~/.zshrc
   ```
 
-  Pengin refresh tanpa buka terminal baru? Jalankan `eval "$(./scripts/c4ignite setup shell --refresh)"`.
+  Need a refresh without a new tab? Run `eval "$(./scripts/c4ignite setup shell --refresh)"`.
 
-- **Backup & restore skeleton**  
-  Buat arsip `src/` (bisa terenkripsi):
+- **Backup & restore the app skeleton**  
+  Archive `src/` (encryption optional):
   ```
   ./scripts/c4ignite backup create
   ```
-  Temanmu bisa restore dengan:
+  Teammates can restore with:
   ```
   ./scripts/c4ignite backup restore <arsip>
   ```
-  Atau pakai mode interaktif:
+  Or let them pick interactively:
   ```
   ./scripts/c4ignite backup restore --interactive
   ```
 
 ---
 
-### 📘 Dokumentasi
+### 📘 Docs
 
-- Panduan umum: [`docs/c4ignite.md`](docs/c4ignite.md)
+- Quick guide: [`docs/c4ignite.md`](docs/c4ignite.md)
 - Troubleshooting: [`docs/troubleshooting.md`](docs/troubleshooting.md)
 
 ---
 
 <p align="center">
-  <sub>Made with ☕ & 🧠 — by developers who love CodeIgniter 4</sub>
+  <sub>Built with ☕ & enough serotonin — by devs who vibe with CodeIgniter 4</sub>
 </p>
