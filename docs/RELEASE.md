@@ -3,11 +3,7 @@
 Panduan singkat buat rilis versi baru sekaligus publish image pra-build ke GitHub Container Registry (GHCR).
 
 ## 1. Siapkan rilis
-1. Pastikan cabang `main` bersih dan semua perubahan sudah melewati tes lokal:
-   ```bash
-   python -m unittest discover -s tests/python
-   bats tests/cli
-   ```
+1. Pastikan cabang `main` bersih dan semua perubahan relevan sudah lolos pengecekan lokal.
 2. Update versi / changelog bila perlu (contoh `CHANGELOG.md` atau catatan rilis GitHub).
 3. Buat tag semantik, misal `v1.2.0`:
    ```bash

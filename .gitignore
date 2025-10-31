@@ -18,3 +18,6 @@ c4ignite-src-*.tar.gz
 node_modules/
 vendor/
 scripts/python/__pycache__/
+
+# Local testing assets
+tests/

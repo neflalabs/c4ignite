@@ -345,8 +345,16 @@ composer_prepare_cache() {
 }
 
 composer_install_noninteractive() {
+    local offline="${1:-0}"
     composer_prepare_cache
-    compose run --rm --no-deps -T -w /var/www/html "${APP_SERVICE}" composer install --no-interaction
+
+    local -a run_args=(run --rm --no-deps -T)
+    if [[ "${offline}" -eq 1 || "${C4IGNITE_FORCE_OFFLINE:-0}" -eq 1 ]]; then
+        run_args+=(-e COMPOSER_DISABLE_NETWORK=1)
+    fi
+    run_args+=(-w /var/www/html "${APP_SERVICE}" composer install --no-interaction --prefer-dist --no-progress)
+
+    compose "${run_args[@]}"
 }
 
 cmd_composer() {
@@ -1152,6 +1160,7 @@ cmd_build() {
     local tag="c4ignite-app:latest"
     local push=0
     local build_args=()
+    local no_cache=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -1177,17 +1186,30 @@ cmd_build() {
                 build_args+=("--build-arg" "$2")
                 shift 2
                 ;;
+            --no-cache)
+                no_cache=1
+                shift
+                ;;
             *)
                 die "Unknown build option: $1"
                 ;;
         esac
     done
 
-    docker build \
-        -f "${PROJECT_ROOT}/docker/prod/Dockerfile" \
-        -t "${tag}" \
-        "${build_args[@]}" \
-        "${PROJECT_ROOT}"
+    local -a docker_cmd=(
+        docker build
+        -f "${PROJECT_ROOT}/docker/prod/Dockerfile"
+        -t "${tag}"
+    )
+
+    if [[ ${no_cache} -eq 1 ]]; then
+        docker_cmd+=(--no-cache)
+    fi
+
+    docker_cmd+=("${build_args[@]}")
+    docker_cmd+=("${PROJECT_ROOT}")
+
+    "${docker_cmd[@]}"
 
     if [[ ${push} -eq 1 ]]; then
         docker push "${tag}"
