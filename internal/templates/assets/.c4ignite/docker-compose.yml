@@ -1,0 +1,51 @@
+services:
+  php:
+    image: "${C4IGNITE_PHP_IMAGE:-ghcr.io/neflalabs/c4ignite-dev:latest}"
+    container_name: c4ignite-php
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ../:/var/www/html
+      - composer_cache:/tmp/composer
+      - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/99-xdebug.ini
+    environment:
+      PHP_IDE_CONFIG: "serverName=c4ignite"
+      COMPOSER_HOME: /tmp/composer
+      COMPOSER_CACHE_DIR: /tmp/composer/cache
+    networks:
+      - c4ignite
+
+  nginx:
+    image: nginx:latest
+    container_name: c4ignite-nginx
+    depends_on:
+      - php
+    ports:
+      - "8000:80"
+    volumes:
+      - ../:/var/www/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - c4ignite
+
+  mysql:
+    image: mariadb:10.11
+    container_name: c4ignite-mysql
+    environment:
+      MARIADB_DATABASE: app
+      MARIADB_USER: app
+      MARIADB_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "33060:3306"
+    networks:
+      - c4ignite
+
+volumes:
+  mysql_data:
+  composer_cache:
+
+networks:
+  c4ignite:
+    driver: bridge

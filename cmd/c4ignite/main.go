@@ -16,12 +16,10 @@ import (
 	"time"
 
 	"github.com/neflalabs/c4ignite/internal/backup"
-	"github.com/neflalabs/c4ignite/internal/builder"
 	"github.com/neflalabs/c4ignite/internal/compose"
 	"github.com/neflalabs/c4ignite/internal/config"
 	"github.com/neflalabs/c4ignite/internal/doctor"
 	"github.com/neflalabs/c4ignite/internal/env"
-	"github.com/neflalabs/c4ignite/internal/release"
 	"github.com/neflalabs/c4ignite/internal/templates"
 )
 
@@ -88,10 +86,6 @@ func main() {
 		handleLint(ctx, args)
 	case "xdebug":
 		handleXdebug(ctx, args)
-	case "build":
-		handleBuild(ctx, args)
-	case "deploy", "release":
-		handleRelease(ctx, args)
 	case "backup":
 		handleBackup(ctx, args)
 	case "completion":
@@ -114,7 +108,8 @@ func printUsage() {
 `
 	fmt.Println(banner)
 	fmt.Printf("Usage: c4ignite <command> [arguments]\n\n")
-	fmt.Println("🚀 Core Lifecycle Commands:")
+	fmt.Println("🚀 Core Commands:")
+	fmt.Println("  init [ProjectName] [--force]        Bootstrap fresh CI4 app (Default: Codeigniter4)")
 	fmt.Println("  up [--build] [-d] [--with=service]  Start containerized stack")
 	fmt.Println("  down [-v]                           Stop and remove containers")
 	fmt.Println("  restart [service]                   Restart all or specific service")
@@ -122,7 +117,7 @@ func printUsage() {
 	fmt.Println("  logs [-f] [service]                 Tail service container logs")
 	fmt.Println("  pull                                Pull latest container images")
 	fmt.Println()
-	fmt.Println("⚡ CodeIgniter & Dev Ergonomics:")
+	fmt.Println("⚡ CodeIgniter 4 Ergonomics:")
 	fmt.Println("  spark [command]                     Run CodeIgniter 4 Spark command")
 	fmt.Println("  migrate                             Shortcut for 'spark migrate'")
 	fmt.Println("  seed [seeder]                       Shortcut for 'spark db:seed'")
@@ -132,17 +127,13 @@ func printUsage() {
 	fmt.Println("  shell [service]                     Drop into bash/sh shell inside container")
 	fmt.Println("  xdebug [on|off|status]              Toggle Xdebug dynamically")
 	fmt.Println()
-	fmt.Println("🚢 Production & Deployment:")
-	fmt.Println("  build [--tag=name] [--no-cache]     Build production multi-stage OCI image")
-	fmt.Println("  release / deploy [--skip-health]    Execute safe migration & release pipeline")
-	fmt.Println()
-	fmt.Println("🛠️ Project Management & QA:")
-	fmt.Println("  init [dir] [--force] [--dir=dir]    Bootstrap fresh CI4 AppStarter (Interactive/Custom)")
+	fmt.Println("🛠️ Utilities & Testing:")
 	fmt.Println("  doctor                              Run host diagnostic checks")
 	fmt.Println("  test [options]                      Run PHPUnit test suite")
 	fmt.Println("  lint                                Run PHP code style linter")
-	fmt.Println("  backup [create|restore]             Fast native backup & restore of src/")
-	fmt.Println("  completion [bash|zsh|fish]          Generate shell auto-completions")
+	fmt.Println("  backup [create|restore]             Fast native backup & restore")
+	fmt.Println("  completion [install|uninstall]      Configure shell auto-completions")
+	fmt.Println("  version                             Show CLI version")
 	fmt.Println()
 }
 
@@ -165,21 +156,34 @@ func handleInit(ctx context.Context, args []string) {
 	tag := ""
 	force := false
 	noInstall := false
-	appDir := ""
+	projectName := ""
 
 	for _, a := range args {
 		if strings.HasPrefix(a, "--version=") {
 			tag = strings.TrimPrefix(a, "--version=")
 		} else if strings.HasPrefix(a, "--dir=") {
-			appDir = strings.TrimPrefix(a, "--dir=")
+			projectName = strings.TrimPrefix(a, "--dir=")
 		} else if strings.HasPrefix(a, "-d=") {
-			appDir = strings.TrimPrefix(a, "-d=")
+			projectName = strings.TrimPrefix(a, "-d=")
 		} else if a == "--force" || a == "-f" {
 			force = true
 		} else if a == "--no-install" {
 			noInstall = true
-		} else if !strings.HasPrefix(a, "-") && appDir == "" {
-			appDir = a
+		} else if !strings.HasPrefix(a, "-") && projectName == "" {
+			projectName = a
+		}
+	}
+
+	// Interactive prompt if projectName not specified via flags/args
+	if projectName == "" {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("📂 Project name [default: Codeigniter4]: ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+		if input != "" {
+			projectName = input
+		} else {
+			projectName = "Codeigniter4"
 		}
 	}
 
@@ -191,37 +195,15 @@ func handleInit(ctx context.Context, args []string) {
 		fmt.Printf("(%s)\n", tag)
 	}
 
-	pCtx, err := config.FindProjectRoot("")
-	var rootDir string
-	if err != nil {
-		rootDir, _ = os.Getwd()
-	} else {
-		rootDir = pCtx.RootPath
-	}
-
-	// Interactive prompt if appDir not specified via flags/args
-	if appDir == "" {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("📂 Nama folder aplikasi CodeIgniter 4 yang diinginkan [default: src]: ")
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		if input != "" {
-			appDir = input
-		} else {
-			appDir = "src"
-		}
-	}
-
-	// Sanitize folder name
-	appDir = filepath.Clean(appDir)
-	targetDir := filepath.Join(rootDir, appDir)
+	cwd, _ := os.Getwd()
+	targetDir := filepath.Join(cwd, projectName)
 
 	if !force && dirHasFiles(targetDir) {
-		fmt.Printf("⚠️  Folder '%s/' sudah ada dan berisi file. Gunakan --force untuk menimpa.\n", appDir)
+		fmt.Printf("⚠️  Directory '%s/' already exists and is not empty. Use --force to overwrite.\n", projectName)
 		return
 	}
 
-	fmt.Printf("📦 Initializing CodeIgniter 4 AppStarter (%s) into '%s/'...\n", tag, appDir)
+	fmt.Printf("📦 Initializing CodeIgniter 4 (%s) into '%s/'...\n", tag, projectName)
 	tarURL := fmt.Sprintf(AppStarterURL, tag)
 	cacheDir := getAppCacheDir()
 	_ = os.MkdirAll(cacheDir, 0755)
@@ -234,46 +216,50 @@ func handleInit(ctx context.Context, args []string) {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Printf("⚡ Using cached tarball %s\n", tarPath)
+		fmt.Printf("⚡ Using cached archive %s\n", tarPath)
 	}
 
-	fmt.Printf("📂 Extracting application skeleton into %s/...\n", appDir)
+	fmt.Printf("📂 Scaffolding project into %s/...\n", projectName)
 	if err := extractTarGzStripped(tarPath, targetDir); err != nil {
 		fmt.Fprintf(os.Stderr, "Extraction failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Save app dir marker for persistent upward discovery
-	_ = os.WriteFile(filepath.Join(rootDir, ".c4ignite-app"), []byte(appDir+"\n"), 0644)
-
-	// Extract embedded templates (docker configs & envs) if missing
-	_ = templates.Extract("env", filepath.Join(rootDir, "templates", "env"), false)
-	_ = templates.Extract("docker", filepath.Join(rootDir, "docker"), false)
+	// Extract embedded .c4ignite configurations directly into project
+	_ = templates.Extract(".c4ignite", filepath.Join(targetDir, ".c4ignite"), false)
+	_ = templates.Extract("env", filepath.Join(targetDir, ".c4ignite", "env"), false)
 
 	// Copy dev.env to targetDir/.env if not present
 	srcEnv := filepath.Join(targetDir, ".env")
 	if !fileExists(srcEnv) {
-		devEnv := filepath.Join(rootDir, "templates", "env", "dev.env")
+		devEnv := filepath.Join(targetDir, ".c4ignite", "env", "dev.env")
 		if fileExists(devEnv) {
 			copyFile(devEnv, srcEnv)
-			fmt.Printf("📄 Created %s/.env from templates/env/dev.env\n", appDir)
 		}
 	}
 
 	// Run composer install to provision vendor/ and framework Boot.php
 	if !noInstall {
 		fmt.Println("📦 Installing framework dependencies (composer install)...")
+		// Temporarily change directory to targetDir to run composer install
+		origDir, _ := os.Getwd()
+		_ = os.Chdir(targetDir)
 		projCtx, runner := getRunner()
 		if runner != nil && projCtx != nil {
 			if err := runner.ExecPHP(ctx, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
-				fmt.Println("⚠️  Composer install in container failed or skipped. You can run 'c4ignite composer install' later.")
+				fmt.Println("⚠️  Composer install skipped. You can run 'c4ignite composer install' later.")
 			} else {
-				fmt.Println("✅ Vendor dependencies installed successfully.")
+				fmt.Println("✅ Framework dependencies installed successfully.")
 			}
 		}
+		_ = os.Chdir(origDir)
 	}
 
-	fmt.Printf("✨ CodeIgniter 4 initialized successfully in '%s/'! Jalankan 'c4ignite up' untuk mulai.\n", appDir)
+	fmt.Printf("\n✨ CodeIgniter 4 project '%s' created successfully!\n\n", projectName)
+	fmt.Println("👉 Next steps:")
+	fmt.Printf("  cd %s\n", projectName)
+	fmt.Println("  c4ignite up")
+	fmt.Println()
 }
 
 // resolveLatestCI4Release queries GitHub API for the latest release tag
@@ -517,52 +503,6 @@ func handleXdebug(ctx context.Context, args []string) {
 	}
 }
 
-func handleBuild(ctx context.Context, args []string) {
-	pCtx, _ := getRunner()
-	opts := builder.BuildOptions{
-		Tag: "c4ignite-app:latest",
-	}
-
-	for _, a := range args {
-		if strings.HasPrefix(a, "--tag=") {
-			opts.Tag = strings.TrimPrefix(a, "--tag=")
-		} else if strings.HasPrefix(a, "-t=") {
-			opts.Tag = strings.TrimPrefix(a, "-t=")
-		} else if strings.HasPrefix(a, "--target=") {
-			opts.Target = strings.TrimPrefix(a, "--target=")
-		} else if a == "--no-cache" {
-			opts.NoCache = true
-		} else if a == "--push" {
-			opts.Push = true
-		}
-	}
-
-	if err := builder.Build(ctx, pCtx, opts); err != nil {
-		fmt.Fprintf(os.Stderr, "Build error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func handleRelease(ctx context.Context, args []string) {
-	pCtx, runner := getRunner()
-	opts := release.ReleaseOptions{}
-
-	for _, a := range args {
-		if a == "--skip-migration" || a == "--skip-migrate" {
-			opts.SkipMigration = true
-		} else if a == "--skip-health" {
-			opts.SkipHealth = true
-		} else if strings.HasPrefix(a, "--health-url=") {
-			opts.HealthURL = strings.TrimPrefix(a, "--health-url=")
-		}
-	}
-
-	if err := release.Execute(ctx, pCtx, runner, opts); err != nil {
-		fmt.Fprintf(os.Stderr, "Release error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
 func handleBackup(ctx context.Context, args []string) {
 	if len(args) == 0 {
 		fmt.Println("Usage: c4ignite backup [create|restore] [options]")
@@ -632,7 +572,7 @@ func handleCompletion(args []string) {
         cword=$COMP_CWORD
     }
 
-    local commands="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
+    local commands="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug backup doctor init version help completion"
 
     if [ "$cword" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "${commands}" -- "$cur") )
@@ -649,12 +589,6 @@ func handleCompletion(args []string) {
             ;;
         backup)
             COMPREPLY=( $(compgen -W "create restore" -- "$cur") )
-            ;;
-        build)
-            COMPREPLY=( $(compgen -W "--tag= --no-cache --push --target=" -- "$cur") )
-            ;;
-        release|deploy)
-            COMPREPLY=( $(compgen -W "--skip-migration --skip-health --health-url=" -- "$cur") )
             ;;
         init)
             COMPREPLY=( $(compgen -W "--force --version= --dir=" -- "$cur") )
@@ -696,9 +630,6 @@ _c4ignite() {
         'test:Run PHPUnit test suite'
         'lint:Run PHP code style linter'
         'xdebug:Toggle Xdebug dynamically (on|off|status)'
-        'build:Build production multi-stage OCI container'
-        'deploy:Run production release & deployment pipeline'
-        'release:Run production release & deployment pipeline'
         'doctor:Run environment diagnostic checks'
         'backup:Backup or restore application files'
         'completion:Generate or install shell autocompletions'
@@ -729,12 +660,6 @@ _c4ignite() {
             backup_cmds=('create:Create backup archive' 'restore:Restore backup archive')
             _describe -t subcommands 'backup action' backup_cmds
             ;;
-        build)
-            _values 'flags' '--tag=[Specify image tag]' '--no-cache[Build without cache]' '--push[Push image to registry]'
-            ;;
-        release|deploy)
-            _values 'flags' '--skip-migration[Skip database migrations]' '--skip-health[Skip post-deploy healthcheck]'
-            ;;
         shell|restart|logs)
             local -a services
             services=('php:PHP Application Service' 'nginx:Web Server' 'mysql:Database')
@@ -746,7 +671,7 @@ _c4ignite() {
 compdef _c4ignite c4ignite 2>/dev/null || true`)
 	case "fish":
 		fmt.Println(`complete -c c4ignite -f
-complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"`)
+complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug backup doctor init version help completion"`)
 	}
 }
 
@@ -770,7 +695,7 @@ eval "$(c4ignite completion zsh)"
 		_ = os.MkdirAll(fishDir, 0755)
 		fishFile := filepath.Join(fishDir, "c4ignite.fish")
 		_ = os.WriteFile(fishFile, []byte(`complete -c c4ignite -f
-complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
+complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug backup doctor init version help completion"
 `), 0644)
 		fmt.Printf("✅ Installed fish completion at %s\n", fishFile)
 	} else {

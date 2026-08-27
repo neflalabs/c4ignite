@@ -1,64 +1,75 @@
 <p align="center">
-  <img src="img/c4ignite.png" alt="C4ignite" width="300" height="300">
+  <img src="img/c4ignite.png" alt="c4ignite" width="260" height="260">
 </p>
 
-# C4ignite — Toolkit CodeIgniter 4 Cepat & Mandiri Berbasis Native Go 🚀
-
-> **Lingkungan Pengembangan CodeIgniter 4 Instan & Full Dockerized** — Tanpa perlu install PHP, Composer, atau MySQL di komputer host.
+<h1 align="center">c4ignite</h1>
+<p align="center">
+  <strong>Environment development lokal berbasis Docker untuk CodeIgniter 4.</strong><br>
+  Tanpa perlu install PHP, Composer, atau MySQL di komputer host. Berbentuk single binary mandiri.
+</p>
 
 ---
 
-## ⚡ Instalasi Cepat (One-Line Installer dari GitHub)
+## ⚡ Instalasi
 
-Pasang `c4ignite` secara global ke sistem Anda dalam hitungan detik:
+Pasang `c4ignite` secara global ke sistem Anda:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash
 ```
 
-### 🗑️ Cara Uninstall
-Untuk menghapus `c4ignite` sepenuhnya dari sistem:
+Untuk uninstall:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash -s -- --uninstall
 ```
 
 ---
 
-## 🛠️ Panduan Memulai Cepat
+## 🚀 3 Langkah Mulai
 
-### 1. Inisialisasi Proyek CodeIgniter 4
+### 1. Inisialisasi proyek baru
 ```bash
-c4ignite init
+c4ignite init Aplikasiku
 ```
-*CLI akan menanyakan nama folder aplikasi yang Anda inginkan (misal `src`, `app`, atau nama kustom lainnya).*
+*(Atau ketik `c4ignite init` untuk menggunakan nama folder default `Codeigniter4`)*
 
-### 2. Nyalakan Development Stack
+### 2. Masuk ke folder proyek
+```bash
+cd Aplikasiku
+```
+
+### 3. Nyalakan container stack
 ```bash
 c4ignite up
 ```
-* Buka browser di: [http://localhost:8000](http://localhost:8000)
-* Mailhog (Web UI email testing): [http://localhost:8025](http://localhost:8025)
+Buka browser di **[http://localhost:8000](http://localhost:8000)**.
 
 ---
 
-## ⚡ Perintah Utama Sehari-hari
+## 🛠️ Perintah Harian
 
-| Aksi | Perintah |
+| Perintah | Deskripsi |
 |---|---|
-| **Menjalankan Spark CI4** | `c4ignite spark make:controller Home` |
-| **Migrasi Database** | `c4ignite migrate` |
-| **Seeder Database** | `c4ignite seed UserSeeder` |
-| **Interactive MySQL Console** | `c4ignite db` |
-| **Menjalankan Composer** | `c4ignite composer require <package>` |
-| **Menjalankan Unit Test** | `c4ignite test` |
-| **Toggle Xdebug Dinamis** | `c4ignite xdebug on` / `c4ignite xdebug off` |
-| **Backup Native Terenkripsi** | `c4ignite backup create --key=secret` |
-| **Build Multi-Stage Produksi** | `c4ignite build --tag=myapp:v1.0.0` |
-| **Deploy & Release Pipeline** | `c4ignite release` |
-| **Cek Kesiapan Host** | `c4ignite doctor` |
+| `c4ignite up` | Menyalakan stack development (PHP, Nginx, MariaDB) |
+| `c4ignite down` | Menghentikan container stack (`-v` untuk reset database volume) |
+| `c4ignite restart [service]` | Restart container service |
+| `c4ignite status` | Melihat status dan health container |
+| `c4ignite logs -f` | Melihat log real-time container |
+| `c4ignite spark [command]` | Menjalankan perintah CodeIgniter 4 Spark |
+| `c4ignite migrate` | Menjalankan migrasi database (`spark migrate`) |
+| `c4ignite seed [name]` | Menjalankan seeder database (`spark db:seed`) |
+| `c4ignite composer [args]` | Menjalankan Composer di dalam container |
+| `c4ignite php [script]` | Menjalankan script PHP di dalam container |
+| `c4ignite db` | Membuka interactive console MySQL / MariaDB |
+| `c4ignite shell [service]` | Masuk ke terminal shell container |
+| `c4ignite xdebug on\|off` | Mengaktifkan/menonaktifkan Xdebug |
+| `c4ignite test` | Menjalankan unit test PHPUnit |
+| `c4ignite lint` | Menjalankan PHP code style linter |
+| `c4ignite doctor` | Memeriksa kesiapan Docker & environment host |
 
 ---
 
-## 📘 Dokumentasi Tambahan
-- [Troubleshooting & Solusi Masalah](troubleshooting-id.md)
-- [Histori Arsitektur & TaskDev](../TaskDev/README.md)
+## ⚙️ Informasi Port Bawaan
+
+* **Aplikasi Web:** `http://localhost:8000`
+* **MySQL / MariaDB:** `localhost:33060` (user: `app`, pass: `secret`, db: `app`)

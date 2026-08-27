@@ -34,12 +34,21 @@ func FindProjectRoot(startDir string) (*ProjectContext, error) {
 	}
 
 	for {
-		// Check for docker/dev/docker-compose.yml or scripts/c4ignite or c4ignite.yml
-		composeCheck := filepath.Join(curr, "docker", "dev", "docker-compose.yml")
-		scriptCheck := filepath.Join(curr, "scripts", "c4ignite")
-		configCheck := filepath.Join(curr, "c4ignite.yml")
+		// 1. Check modern embedded layout: .c4ignite/docker-compose.yml or docker/dev/docker-compose.yml
+		composeModern := filepath.Join(curr, ".c4ignite", "docker-compose.yml")
+		composeDev := filepath.Join(curr, "docker", "dev", "docker-compose.yml")
+		composeCheck := ""
+		dockerDevDir := ""
 
-		if fileExists(composeCheck) || fileExists(scriptCheck) || fileExists(configCheck) {
+		if fileExists(composeModern) {
+			composeCheck = composeModern
+			dockerDevDir = filepath.Join(curr, ".c4ignite")
+		} else if fileExists(composeDev) {
+			composeCheck = composeDev
+			dockerDevDir = filepath.Join(curr, "docker", "dev")
+		}
+
+		if composeCheck != "" {
 			uid := os.Getuid()
 			gid := os.Getgid()
 			if uid == 0 {
@@ -51,12 +60,16 @@ func FindProjectRoot(startDir string) (*ProjectContext, error) {
 
 			// Resolve App Directory name dynamically
 			appDirName := ResolveAppDir(curr)
+			srcPath := curr
+			if appDirName != "." && appDirName != "" {
+				srcPath = filepath.Join(curr, appDirName)
+			}
 
 			return &ProjectContext{
 				RootPath:     curr,
 				AppDirName:   appDirName,
-				SrcPath:      filepath.Join(curr, appDirName),
-				DockerDevDir: filepath.Join(curr, "docker", "dev"),
+				SrcPath:      srcPath,
+				DockerDevDir: dockerDevDir,
 				ComposeFile:  composeCheck,
 				BackupDir:    filepath.Join(curr, "backups"),
 				HostUID:      uid,
@@ -71,7 +84,7 @@ func FindProjectRoot(startDir string) (*ProjectContext, error) {
 		curr = parent
 	}
 
-	return nil, fmt.Errorf("not in a c4ignite project (no docker/dev/docker-compose.yml or scripts/c4ignite found in parent directories)")
+	return nil, fmt.Errorf("not in a c4ignite project (no .c4ignite/docker-compose.yml or docker/dev/docker-compose.yml found in parent directories)")
 }
 
 // ResolveAppDir determines which folder contains the CI4 application
@@ -90,18 +103,23 @@ func ResolveAppDir(rootDir string) string {
 		}
 	}
 
-	// 3. Check if default src/ exists and has spark or composer.json
+	// 3. Check if spark / composer.json exists directly in rootDir (standalone project)
+	if fileExists(filepath.Join(rootDir, "spark")) || fileExists(filepath.Join(rootDir, "composer.json")) {
+		return "."
+	}
+
+	// 4. Check if default src/ exists and has spark or composer.json
 	if fileExists(filepath.Join(rootDir, "src", "spark")) || fileExists(filepath.Join(rootDir, "src", "composer.json")) {
 		return "src"
 	}
 
-	// 4. Check if app/ exists and has spark or composer.json
+	// 5. Check if app/ exists and has spark or composer.json
 	if fileExists(filepath.Join(rootDir, "app", "spark")) || fileExists(filepath.Join(rootDir, "app", "composer.json")) {
 		return "app"
 	}
 
 	// Default fallback
-	return "src"
+	return "."
 }
 
 func fileExists(path string) bool {
