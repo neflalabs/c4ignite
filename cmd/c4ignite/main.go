@@ -217,8 +217,8 @@ func handleInit(ctx context.Context, args []string) {
 
 	fmt.Printf("📦 Initializing CodeIgniter 4 AppStarter (%s) into '%s/'...\n", tag, appDir)
 	tarURL := fmt.Sprintf(AppStarterURL, tag)
-	cacheDir := filepath.Join(rootDir, "backups", "cache")
-	os.MkdirAll(cacheDir, 0755)
+	cacheDir := getAppCacheDir()
+	_ = os.MkdirAll(cacheDir, 0755)
 	tarPath := filepath.Join(cacheDir, fmt.Sprintf("appstarter-%s.tar.gz", tag))
 
 	if !fileExists(tarPath) || force {
@@ -589,6 +589,11 @@ func handleBackup(ctx context.Context, args []string) {
 }
 
 func handleCompletion(args []string) {
+	if len(args) > 0 && args[0] == "install" {
+		installCompletion()
+		return
+	}
+
 	shell := "bash"
 	if len(args) > 0 {
 		shell = args[0]
@@ -599,7 +604,7 @@ func handleCompletion(args []string) {
     local cur prev opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    opts="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help"
+    opts="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
     COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
     return 0
 }
@@ -627,10 +632,73 @@ _c4ignite() {
         'release:Run production release and deployment pipeline'
         'doctor:Run environment diagnostics'
         'backup:Backup or restore src/'
+        'completion:Generate or install shell autocompletions'
     )
     _describe 'command' commands
 }`)
+	case "fish":
+		fmt.Println(`complete -c c4ignite -f
+complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"`)
 	}
+}
+
+func installCompletion() {
+	shell := os.Getenv("SHELL")
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error finding home directory: %v\n", err)
+		return
+	}
+
+	if strings.Contains(shell, "zsh") {
+		zshrc := filepath.Join(homeDir, ".zshrc")
+		appendSnippetIfMissing(zshrc, `
+# c4ignite autocompletion
+eval "$(c4ignite completion zsh)"
+`)
+		fmt.Printf("✅ Added c4ignite completion to %s. Run 'source ~/.zshrc' to activate.\n", zshrc)
+	} else if strings.Contains(shell, "fish") {
+		fishDir := filepath.Join(homeDir, ".config", "fish", "completions")
+		_ = os.MkdirAll(fishDir, 0755)
+		fishFile := filepath.Join(fishDir, "c4ignite.fish")
+		_ = os.WriteFile(fishFile, []byte(`complete -c c4ignite -f
+complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
+`), 0644)
+		fmt.Printf("✅ Installed fish completion at %s\n", fishFile)
+	} else {
+		// Default to bash
+		bashrc := filepath.Join(homeDir, ".bashrc")
+		appendSnippetIfMissing(bashrc, `
+# c4ignite autocompletion
+eval "$(c4ignite completion bash)"
+`)
+		fmt.Printf("✅ Added c4ignite completion to %s. Run 'source ~/.bashrc' to activate.\n", bashrc)
+	}
+}
+
+func appendSnippetIfMissing(filePath, snippet string) {
+	content, _ := os.ReadFile(filePath)
+	if strings.Contains(string(content), "c4ignite completion") {
+		return
+	}
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, _ = f.WriteString(snippet)
+}
+
+func getAppCacheDir() string {
+	userCache, err := os.UserCacheDir()
+	if err == nil && userCache != "" {
+		return filepath.Join(userCache, "c4ignite")
+	}
+	homeDir, err := os.UserHomeDir()
+	if err == nil && homeDir != "" {
+		return filepath.Join(homeDir, ".config", "c4ignite", "cache")
+	}
+	return filepath.Join(os.TempDir(), "c4ignite-cache")
 }
 
 // Helpers

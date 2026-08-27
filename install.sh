@@ -170,6 +170,11 @@ main() {
     fi
 
     log_success "c4ignite installed successfully at ${INSTALL_DIR}/${BINARY_NAME}!"
+
+    # 4. Setup Shell Autocompletion
+    log_info "Configuring shell auto-completion..."
+    "${INSTALL_DIR}/${BINARY_NAME}" completion install || true
+
     printf "\n"
     printf "${GREEN}To get started, simply run:${NC}\n"
     printf "  ${BOLD}c4ignite init${NC}   (to bootstrap a fresh CodeIgniter 4 project)\n"
