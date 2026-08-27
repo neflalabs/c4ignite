@@ -110,10 +110,24 @@ uninstall_c4ignite() {
         fi
     done
 
+    # 2. Clean up shell autocompletions
+    log_info "Cleaning up shell autocompletion snippets..."
+    if [ -f "${HOME}/.bashrc" ]; then
+        sed -i '/c4ignite completion/d' "${HOME}/.bashrc" 2>/dev/null || true
+    fi
+    if [ -f "${HOME}/.zshrc" ]; then
+        sed -i '/c4ignite completion/d' "${HOME}/.zshrc" 2>/dev/null || true
+    fi
+    rm -f "${HOME}/.config/fish/completions/c4ignite.fish" 2>/dev/null || true
+
+    # 3. Clean up cache directory
+    log_info "Cleaning up cache directory..."
+    rm -rf "${HOME}/.cache/c4ignite" "${HOME}/.config/c4ignite" 2>/dev/null || true
+
     if [ "$found" = false ]; then
         log_warn "c4ignite binary not found in standard locations (/usr/local/bin, ~/.local/bin)."
     else
-        log_success "c4ignite has been completely uninstalled from your system!"
+        log_success "c4ignite, its autocompletions, and cache have been completely uninstalled!"
     fi
 }
 

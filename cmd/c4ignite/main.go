@@ -589,8 +589,12 @@ func handleBackup(ctx context.Context, args []string) {
 }
 
 func handleCompletion(args []string) {
-	if len(args) > 0 && args[0] == "install" {
+	if len(args) > 0 && (args[0] == "install" || args[0] == "setup") {
 		installCompletion()
+		return
+	}
+	if len(args) > 0 && (args[0] == "uninstall" || args[0] == "remove") {
+		uninstallCompletion()
 		return
 	}
 
@@ -674,6 +678,49 @@ eval "$(c4ignite completion bash)"
 `)
 		fmt.Printf("✅ Added c4ignite completion to %s. Run 'source ~/.bashrc' to activate.\n", bashrc)
 	}
+}
+
+func uninstallCompletion() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	// Remove from ~/.bashrc
+	bashrc := filepath.Join(homeDir, ".bashrc")
+	removeSnippetIfExists(bashrc, "c4ignite completion")
+
+	// Remove from ~/.zshrc
+	zshrc := filepath.Join(homeDir, ".zshrc")
+	removeSnippetIfExists(zshrc, "c4ignite completion")
+
+	// Remove from ~/.config/fish/completions/c4ignite.fish
+	fishFile := filepath.Join(homeDir, ".config", "fish", "completions", "c4ignite.fish")
+	_ = os.Remove(fishFile)
+	fmt.Println("🧹 Removed c4ignite shell completion configurations.")
+}
+
+func removeSnippetIfExists(filePath, marker string) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return
+	}
+	lines := strings.Split(string(data), "\n")
+	var filtered []string
+	skipNext := false
+	for _, l := range lines {
+		if strings.Contains(l, marker) || strings.Contains(l, "c4ignite autocompletion") {
+			skipNext = true
+			continue
+		}
+		if skipNext && strings.TrimSpace(l) == "" {
+			skipNext = false
+			continue
+		}
+		skipNext = false
+		filtered = append(filtered, l)
+	}
+	_ = os.WriteFile(filePath, []byte(strings.Join(filtered, "\n")), 0644)
 }
 
 func appendSnippetIfMissing(filePath, snippet string) {
