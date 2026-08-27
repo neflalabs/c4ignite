@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Version        = "v2026.08.02"
+	Version        = "v2026.08.08"
 	DefaultRelease = "v4.6.3"
 	AppStarterURL  = "https://github.com/codeigniter4/appstarter/archive/refs/tags/%s.tar.gz"
 )
