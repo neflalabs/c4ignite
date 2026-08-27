@@ -168,19 +168,35 @@ main() {
     chmod +x "${TMP_BIN}"
 
     # Determine installation target folder (allow non-root fallback to ~/.local/bin)
+    # Use install command or mv instead of cp to avoid 'Text file busy' when updating self
     if [ ! -w "${INSTALL_DIR}" ] && [ "$EUID" -ne 0 ]; then
         if command -v sudo >/dev/null 2>&1; then
             log_info "Installing to ${INSTALL_DIR}/${BINARY_NAME} using sudo..."
-            sudo cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            if command -v install >/dev/null 2>&1; then
+                sudo install -m 755 "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            else
+                sudo rm -f "${INSTALL_DIR}/${BINARY_NAME}" 2>/dev/null || true
+                sudo cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            fi
         else
             INSTALL_DIR="${HOME}/.local/bin"
             mkdir -p "${INSTALL_DIR}"
             log_warn "Cannot write to /usr/local/bin. Installing to ${INSTALL_DIR} instead."
-            cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            if command -v install >/dev/null 2>&1; then
+                install -m 755 "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            else
+                rm -f "${INSTALL_DIR}/${BINARY_NAME}" 2>/dev/null || true
+                cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+            fi
         fi
     else
         mkdir -p "${INSTALL_DIR}"
-        cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+        if command -v install >/dev/null 2>&1; then
+            install -m 755 "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+        else
+            rm -f "${INSTALL_DIR}/${BINARY_NAME}" 2>/dev/null || true
+            cp "${TMP_BIN}" "${INSTALL_DIR}/${BINARY_NAME}"
+        fi
     fi
 
     log_success "c4ignite installed successfully at ${INSTALL_DIR}/${BINARY_NAME}!"
