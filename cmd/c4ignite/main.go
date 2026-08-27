@@ -147,8 +147,8 @@ func printVersionAbout() {
 	fmt.Println("🌐 Website             : https://npx.my.id")
 	fmt.Println("🐙 GitHub Repository   : https://github.com/neflalabs/c4ignite")
 	fmt.Println("📦 Documentation       : https://github.com/neflalabs/c4ignite#readme")
-	fmt.Println("📸 Instagram           : https://instagram.com/nefla")
-	fmt.Println("💡 Created by          : Nefla (https://npx.my.id)")
+	fmt.Println("📸 Instagram           : https://instagram.com/neflalabs")
+	fmt.Println("💡 Created by          : NeflaLabs (https://npx.my.id)")
 	fmt.Println("⚖️  License             : MIT")
 }
 
