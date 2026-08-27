@@ -1,81 +1,58 @@
 <p align="center">
-  <img src="docs/img/c4ignite.png" alt="C4ignite" width="400" height="400">
+  <img src="img/c4ignite.png" alt="C4ignite" width="300" height="300">
 </p>
 
----
+# C4ignite — Toolkit CodeIgniter 4 Cepat & Mandiri Berbasis Native Go 🚀
 
-## 🚀 C4ignite — Toolkit santai buat ngerjain CodeIgniter 4 dengan rasa Laravel Sail
-
-C4ignite bantu kamu bikin lingkungan pengembangan CodeIgniter 4 yang ringan, cepat, dan siap pakai — full Dockerized seperti Laravel Sail.
+> **Lingkungan Pengembangan CodeIgniter 4 Instan & Full Dockerized** — Tanpa perlu install PHP, Composer, atau MySQL di komputer host.
 
 ---
 
-### ⚙️ Fitur & Perintah Utama
+## ⚡ Instalasi Cepat (One-Line Installer dari GitHub)
 
-- **Bootstrap CI4 AppStarter**  
-  Jalankan:  
-  `./scripts/c4ignite init`
+Pasang `c4ignite` secara global ke sistem Anda dalam hitungan detik:
 
-  Buat skeleton CI4 (AppStarter) muncul di folder `src/` — folder ini sengaja di-ignore supaya repo tetap bersih.
-
-  - Tarball AppStarter otomatis di-cache di `backups/cache/`, jadi init berikutnya tinggal ekstrak ulang.
-  - Gunakan `--force-download` kalau mau refresh AppStarter.
-  - Setelah bootstrap, `composer install` akan otomatis dijalankan (bisa dilewati dengan `--no-install`).
-
-- **Jalankan stack dev lengkap**  
-  Hidupkan PHP, Nginx, MariaDB, Redis, dan Mailhog:
-
-  ```
-  ./scripts/c4ignite up
-  ```
-
-  Tambah `--build` kalau mau rebuild image lokal.
-
-- **Shortcut siap pakai**  
-  Beberapa perintah berguna:
-
-  ```
-  ./scripts/c4ignite lint
-  ./scripts/c4ignite backup
-  ./scripts/c4ignite build
-  ```
-
-  Jalankan `./scripts/c4ignite lint --setup` sekali biar lint siap dipakai.  
-  Mau build dengan panduan? Pakai `./scripts/c4ignite build --interactive` untuk pilih tag, opsi push, dan build-arg secara interaktif.
-
-- **Auto-complete & alias shell**  
-  Aktifkan dengan:
-
-  ```
-  ./scripts/c4ignite setup shell
-  source ~/.bashrc   # atau ~/.zshrc
-  ```
-
-  Pengin refresh tanpa buka terminal baru? Jalankan `eval "$(./scripts/c4ignite setup shell --refresh)"`.
-
-- **Backup & restore skeleton**  
-  Buat arsip `src/` (bisa terenkripsi):
-  ```
-  ./scripts/c4ignite backup create
-  ```
-  Temanmu bisa restore dengan:
-  ```
-  ./scripts/c4ignite backup restore <arsip>
-  ```
-  Atau pakai mode interaktif:
-  ```
-  ./scripts/c4ignite backup restore --interactive
-  ```
+```bash
+curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash
+```
 
 ---
 
-### 📘 Dokumentasi
+## 🛠️ Panduan Memulai Cepat
 
-- Panduan umum: [`docs/c4ignite.md`](docs/c4ignite.md)
-- Troubleshooting: [`docs/troubleshooting.md`](docs/troubleshooting.md)
+### 1. Inisialisasi Proyek CodeIgniter 4
+```bash
+c4ignite init
+```
+*CLI akan menanyakan nama folder aplikasi yang Anda inginkan (misal `src`, `app`, atau nama kustom lainnya).*
+
+### 2. Nyalakan Development Stack
+```bash
+c4ignite up
+```
+* Buka browser di: [http://localhost:8000](http://localhost:8000)
+* Mailhog (Web UI email testing): [http://localhost:8025](http://localhost:8025)
 
 ---
 
-<p align="center">
-  <sub>Made with ☕ & 🧠 — by developers who love CodeIgniter 4</sub>
-</p>
+## ⚡ Perintah Utama Sehari-hari
+
+| Aksi | Perintah |
+|---|---|
+| **Menjalankan Spark CI4** | `c4ignite spark make:controller Home` |
+| **Migrasi Database** | `c4ignite migrate` |
+| **Seeder Database** | `c4ignite seed UserSeeder` |
+| **Interactive MySQL Console** | `c4ignite db` |
+| **Menjalankan Composer** | `c4ignite composer require <package>` |
+| **Menjalankan Unit Test** | `c4ignite test` |
+| **Toggle Xdebug Dinamis** | `c4ignite xdebug on` / `c4ignite xdebug off` |
+| **Backup Native Terenkripsi** | `c4ignite backup create --key=secret` |
+| **Build Multi-Stage Produksi** | `c4ignite build --tag=myapp:v1.0.0` |
+| **Deploy & Release Pipeline** | `c4ignite release` |
+| **Cek Kesiapan Host** | `c4ignite doctor` |
+
+---
+
+## 📘 Dokumentasi Tambahan
+- [Troubleshooting & Solusi Masalah](troubleshooting-id.md)
+- [Histori Arsitektur & TaskDev](../TaskDev/README.md)

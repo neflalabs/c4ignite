@@ -1,77 +1,59 @@
-# c4ignite Handbook
+# c4ignite Handbook 🚀
 
-## Prerequisites
+## Requirements
+- Docker & Docker Compose v2.
 
-- Docker plus Docker Compose v2.
-- A shell with `curl` and `tar` (Python tooling ships via the `python` container).
-- `rsync` is optional but speeds up the first init.
+---
 
-## Bootstrapping your project
+## 🛠️ Quickstart
 
-1. Make sure `src/app/Config/App.php` does not exist (the repo intentionally keeps `src/` empty).
-2. Run `./scripts/c4ignite init` to pull the latest AppStarter into `src/` (still ignored by git).
-   - The downloaded tarball is cached in `backups/cache/`, so subsequent runs just extract.
-   - Add `--force-download` if you want to refresh the tarball.
-3. Tweak `src/.env` or `src/.env.docker` to taste. If they’re missing, the init step generates them.
-4. Bring the stack online with `./scripts/c4ignite up` (add `--build` to rebuild the local image). The init already runs `composer install` unless you pass `--no-install`.
-   - Smash the GitHub API rate limit? Set `GH_TOKEN` (read-only PAT) before running `c4ignite init`.
-5. Optional: `./scripts/c4ignite setup env copy dev` (or `staging` / `prod` / `docker`) to pull in a template `.env`.
-6. Optional: `./scripts/c4ignite setup shell` to drop aliases and autocompletion straight into your shell.
+1. **Install `c4ignite` globally** (or use `./bin/c4ignite`):
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash
+   ```
+2. **Bootstrap CodeIgniter 4 AppStarter**:
+   ```bash
+   c4ignite init
+   ```
+   *(Pilih nama folder aplikasi Anda atau tekan Enter untuk default `src/`).*
+3. **Start the Development Stack**:
+   ```bash
+   c4ignite up
+   ```
+   - Web App: [http://localhost:8000](http://localhost:8000)
+   - Mailhog: [http://localhost:8025](http://localhost:8025)
 
-## CLI cheat sheet
+---
 
-- `up | down | restart | status`: manage Docker services.
-- `shell [service]`: hop into a container shell (defaults to `php`).
-- `php …`: run PHP CLI inside the container (cwd is `/var/www/html`).
-- `spark …`: proxy `php spark`.
-- `composer …`: run Composer within the app container.
-- `logs [service]`: tail logs for all services or a specific one.
-- `lint`: run linting; first bootstrap via `./scripts/c4ignite lint --setup`.
-- `build [options]`: build the production image (`-t/--tag`, `--push`, `--build-arg`, `--no-cache`, `--interactive`). Use `--interactive` for a guided prompt (tag, push, build args).
-- `fresh [--reinit]`: stop the stack, wipe volumes, and optionally reset `src/`.
-- `backup create/list/restore/info`: manage encrypted/unencrypted `src/` backups.
-- `setup env list/copy`: list or copy `.env` templates (dev/staging/prod/docker).
-- `init [tag] [--force-download]`: grab AppStarter (latest by default).
-- `doctor`: check local prerequisites and port collisions.
-- `xdebug [on|off|status]`: toggle Xdebug without rebuilding.
-- `setup shell [options]`: interactive wizard for aliases + completions (Bash/Zsh). Supports `--alias`, `--yes`, and `--uninstall`.
+## ⚡ CLI Command Reference
 
-### Default shell per service
+- `c4ignite up [--build] [-d]`: Start containerized stack.
+- `c4ignite down [-v]`: Stop and remove containers.
+- `c4ignite restart [service]`: Restart all or specific service.
+- `c4ignite status`: Show live container health.
+- `c4ignite logs [-f] [service]`: Tail service logs.
+- `c4ignite spark <command>`: Run CodeIgniter 4 Spark command.
+- `c4ignite migrate`: Shortcut for `spark migrate`.
+- `c4ignite seed [seeder]`: Shortcut for `spark db:seed`.
+- `c4ignite db`: Interactive MySQL/MariaDB shell with auto-credentials.
+- `c4ignite composer <command>`: Execute Composer in PHP container.
+- `c4ignite php <script>`: Execute PHP script in container.
+- `c4ignite shell [service]`: Open bash/sh shell inside service container.
+- `c4ignite xdebug [on|off|status]`: Toggle Xdebug dynamically.
+- `c4ignite test [options]`: Run PHPUnit test suite.
+- `c4ignite lint`: Run PHP code style linter.
+- `c4ignite backup create/restore`: Fast native encrypted backup & restore.
+- `c4ignite build [--tag=...]`: Build production multi-stage OCI container.
+- `c4ignite release`: Run zero-downtime release & deployment pipeline.
+- `c4ignite doctor`: Run host diagnostic checks.
+- `c4ignite completion [bash|zsh]`: Generate shell auto-completions.
 
-- **php**: `/bin/bash`
-- **mysql**: `/bin/sh`
-- **nginx**: `/bin/sh`
-- **python**: `/bin/sh`
+---
 
-## Default services & ports
+## 🔌 Default Services & Ports
 
-- Web app: http://localhost:8000 (Nginx serves `public/`).
-- MySQL: `127.0.0.1:33060` with credentials `app/secret`.
-- Redis: `127.0.0.1:63790`.
-- Mailhog UI: http://localhost:8025.
-
-## Quick tips
-
-- All project code lives in `src/`; containers mount the same directory.
-- Export `HOST_UID` / `HOST_GID` before `c4ignite up` to keep permissions chill:
-  `export HOST_UID=$(id -u)` and `export HOST_GID=$(id -g)`.
-- Need Xdebug? Configure `PHP_IDE_CONFIG` + host/port in `src/.env`, override with `XDEBUG_CLIENT_HOST/PORT` if needed, then run `./scripts/c4ignite xdebug on`.
-- Pulling a big change? Drop the stack with `./scripts/c4ignite down` so volumes don’t get cranky.
-- VS Code users can lean on `.devcontainer/` and `.vscode/`.
-- Looking at CI/CD? Example workflows live in `.github/workflows/`.
-- Trouble? Hit `docs/troubleshooting.md`.
-- `./scripts/c4ignite init` defaults `CI_ENVIRONMENT` to `development` and generates `.env.docker` if it’s missing.
-- Run `./scripts/c4ignite setup shell` to install/uninstall aliases + completions; source your shell rc afterward, or shortcut with `eval "$(./scripts/c4ignite setup shell --refresh)"`.
-
-## Backup & share the skeleton
-
-- `./scripts/c4ignite backup create [options]` archives `src/` (vendor/writable excluded by default). Add `--encrypt` to use a passphrase.
-- See what’s available via `./scripts/c4ignite backup list`. Inspect details with `./scripts/c4ignite backup info <file>`.
-- Restore from a teammate using `./scripts/c4ignite backup restore --file path/to/archive` (auto-backup prompt included). Add `--interactive` to pick from the list in `backups/`.
-- Have a pre-built dev image? `docker compose -f docker/dev/docker-compose.yml build php` then `docker save` before sharing.
-
-## Production build flow
-
-- `./scripts/c4ignite build -t registry.example.com/ci4-app:latest` builds the production image using `docker/prod/Dockerfile`.
-- Want to push right away? Slip in `--push` (and make sure you’re logged in).
-- Need build overrides? Use `--build-arg KEY=VALUE`, e.g. `--build-arg APP_BASE_URL=https://app.example.com`.
+- **PHP 8.4-FPM**: Internal App Engine
+- **Nginx**: `http://localhost:8000`
+- **MariaDB 10.11**: `127.0.0.1:33060` (user: `app`, pass: `secret`, db: `app`)
+- **Redis 7**: `127.0.0.1:63790`
+- **Mailhog UI**: `http://localhost:8025`

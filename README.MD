@@ -1,81 +1,65 @@
 <p align="center">
-  <img src="docs/img/c4ignite.png" alt="C4ignite" width="400" height="100%">  
+  <img src="docs/img/c4ignite.png" alt="C4ignite" width="300" height="300">
 </p>
 
----
+# C4ignite — Lightweight, Modern Toolkit for CodeIgniter 4 🚀
 
-## <img src="docs/img/bahlil.gif" alt="bahlil" width="80" height="100%"> C4ignite — Toolkit for CodeIgniter 4 with Laravel Sail energy
-
-C4ignite spins up a lightweight, fully Dockerized CodeIgniter 4 workspace so you can ship faster with zero local-env drama.
+> **Fast, Standalone Single Binary CLI & Dockerized Workflow for CodeIgniter 4** — Zero host PHP/Composer/MySQL installation required.
 
 ---
 
-### ⚙️ Core commands, nice and breezy
+## ⚡ Quick Installation (Universal GitHub One-Liner)
 
-- **Bootstrap CI4 AppStarter**  
-  Run:  
-  `./scripts/c4ignite init`
+Install `c4ignite` globally in seconds using our installer script:
 
-  Drops the AppStarter skeleton into `src/` (git-ignored on purpose).
+```bash
+curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash
+```
 
-  - Cache lands in `backups/cache/`, so re-runs just extract.
-  - Add `--force-download` when you want a fresh tarball.
-  - Skip `composer install` with `--no-install` if you’re offline or already set.
-
-- **Spin up the full dev stack**  
-  Brings up PHP, Nginx, MariaDB, Redis, and Mailhog:
-
-  ```
-  ./scripts/c4ignite up
-  ```
-
-  Toss in `--build` when you want to rebuild the local image.
-
-- **Handy shortcuts**  
-  Your daily drivers:
-
-  ```
-  ./scripts/c4ignite lint
-  ./scripts/c4ignite backup
-  ./scripts/c4ignite build
-  ```
-
-  Prime linting once with `./scripts/c4ignite lint --setup`.  
-  Want a guided image build? Hit `./scripts/c4ignite build --interactive` to pick tags, push, and build args from a prompt.
-
-- **Shell autocomplete & alias**  
-  Install the snippet:
-
-  ```
-  ./scripts/c4ignite setup shell
-  source ~/.bashrc   # or ~/.zshrc
-  ```
-
-  Need a refresh without a new tab? Run `eval "$(./scripts/c4ignite setup shell --refresh)"`.
-
-- **Backup & restore the app skeleton**  
-  Archive `src/` (encryption optional):
-  ```
-  ./scripts/c4ignite backup create
-  ```
-  Teammates can restore with:
-  ```
-  ./scripts/c4ignite backup restore <arsip>
-  ```
-  Or let them pick interactively:
-  ```
-  ./scripts/c4ignite backup restore --interactive
-  ```
+*Supports Linux (amd64/arm64), macOS (Intel & Apple Silicon), and Windows (WSL).*
 
 ---
 
-### 📘 Docs
+## 🛠️ Quickstart Guide
 
-- Quick guide: [`docs/c4ignite.md`](docs/c4ignite.md)
-- Troubleshooting: [`docs/troubleshooting.md`](docs/troubleshooting.md)
+### 1. Initialize a Fresh CodeIgniter 4 Project
+```bash
+c4ignite init
+```
+*Prompt interaktif akan menanyakan nama folder aplikasi yang Anda inginkan (misal `src`, `app`, `my-project`).*
+
+### 2. Start the Development Stack
+```bash
+c4ignite up
+```
+* Web App: [http://localhost:8000](http://localhost:8000)
+* Mailhog Web UI: [http://localhost:8025](http://localhost:8025)
 
 ---
 
+## ⚡ Daily Drivers & Ergonomics
+
+| Action | Command |
+|---|---|
+| **Run Spark CLI** | `c4ignite spark make:controller Home` |
+| **Database Migration** | `c4ignite migrate` |
+| **Database Seeding** | `c4ignite seed UserSeeder` |
+| **Interactive MySQL Shell** | `c4ignite db` |
+| **Run Composer** | `c4ignite composer require <package>` |
+| **Run PHPUnit Tests** | `c4ignite test` |
+| **Toggle Xdebug** | `c4ignite xdebug on` / `c4ignite xdebug off` |
+| **Native Encrypted Backup** | `c4ignite backup create --key=secret` |
+| **OCI Multi-Stage Build** | `c4ignite build --tag=myapp:v1.0.0` |
+| **Safe Production Release** | `c4ignite release` |
+
+---
+
+## 📘 Documentation
+- [Indonesian Documentation](docs/README-id.MD)
+- [Architecture & Task Evolution](TaskDev/README.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
+---
 <p align="center">
-  <sub>Built with ☕ & enough serotonin — by devs who vibe with CodeIgniter 4</sub>
+  <sub>Made with ☕ & 🧠 — by developers who love CodeIgniter 4</sub>
 </p>
