@@ -16,6 +16,12 @@ Pasang `c4ignite` secara global ke sistem Anda dalam hitungan detik:
 curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash
 ```
 
+### 🗑️ Cara Uninstall
+Untuk menghapus `c4ignite` sepenuhnya dari sistem:
+```bash
+curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash -s -- --uninstall
+```
+
 ---
 
 ## 🛠️ Panduan Memulai Cepat

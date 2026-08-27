@@ -18,6 +18,12 @@ curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh 
 
 *Supports Linux (amd64/arm64), macOS (Intel & Apple Silicon), and Windows (WSL).*
 
+### 🗑️ Uninstallation
+To completely remove `c4ignite` from your system:
+```bash
+curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash -s -- --uninstall
+```
+
 ---
 
 ## 🛠️ Quickstart Guide

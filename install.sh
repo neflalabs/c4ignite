@@ -83,8 +83,47 @@ get_latest_release() {
     VERSION="$tag"
 }
 
-# 3. Main Installation Flow
+# 3. Uninstall Flow
+uninstall_c4ignite() {
+    printf "${BOLD}==============================================${NC}\n"
+    printf "${BOLD}  c4ignite Uninstaller                       ${NC}\n"
+    printf "${BOLD}==============================================${NC}\n\n"
+
+    local found=false
+    local targets=("/usr/local/bin/${BINARY_NAME}" "${HOME}/.local/bin/${BINARY_NAME}")
+
+    for target in "${targets[@]}"; do
+        if [ -f "${target}" ]; then
+            found=true
+            log_info "Removing binary at ${target}..."
+            if [ -w "$(dirname "${target}")" ] || [ "$EUID" -eq 0 ]; then
+                rm -f "${target}"
+            else
+                if command -v sudo >/dev/null 2>&1; then
+                    sudo rm -f "${target}"
+                else
+                    log_error "Permission denied to delete ${target}. Please run with sudo."
+                    exit 1
+                fi
+            fi
+            log_success "Removed ${target}"
+        fi
+    done
+
+    if [ "$found" = false ]; then
+        log_warn "c4ignite binary not found in standard locations (/usr/local/bin, ~/.local/bin)."
+    else
+        log_success "c4ignite has been completely uninstalled from your system!"
+    fi
+}
+
+# 4. Main Flow
 main() {
+    if [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "uninstall" ]; then
+        uninstall_c4ignite
+        exit 0
+    fi
+
     printf "${BOLD}==============================================${NC}\n"
     printf "${BOLD}  c4ignite Installer — CodeIgniter 4 CLI     ${NC}\n"
     printf "${BOLD}==============================================${NC}\n\n"
