@@ -46,8 +46,8 @@ func main() {
 	defer stop()
 
 	switch command {
-	case "version", "--version", "-v":
-		fmt.Printf("c4ignite %s (go)\n", Version)
+	case "version", "--version", "-v", "about":
+		printVersionAbout()
 	case "help", "--help", "-h":
 		printUsage()
 	case "init":
@@ -136,8 +136,18 @@ func printUsage() {
 	fmt.Println("  lint                                Run PHP code style linter")
 	fmt.Println("  backup [create|restore]             Fast native backup & restore")
 	fmt.Println("  completion [install|uninstall]      Configure shell auto-completions")
-	fmt.Println("  version                             Show CLI version")
+	fmt.Println("  version / about                     Show CLI version & project info")
 	fmt.Println()
+}
+
+func printVersionAbout() {
+	fmt.Printf("🔥 c4ignite %s (go)\n", Version)
+	fmt.Println("   Lightweight & modern local development toolkit for CodeIgniter 4.")
+	fmt.Println()
+	fmt.Println("🌐 Official Repository : https://github.com/neflalabs/c4ignite")
+	fmt.Println("📦 Documentation       : https://github.com/neflalabs/c4ignite#readme")
+	fmt.Println("💡 Created by          : NeflaLabs (https://github.com/neflalabs)")
+	fmt.Println("⚖️  License             : MIT")
 }
 
 func handleSelfUpdate(ctx context.Context) {
