@@ -605,16 +605,59 @@ func handleCompletion(args []string) {
 	switch shell {
 	case "bash":
 		fmt.Println(`_c4ignite() {
-    local cur prev opts
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    opts="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
-    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    local cur prev words cword
+    _init_completion -n : 2>/dev/null || {
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        words=("${COMP_WORDS[@]}")
+        cword=$COMP_CWORD
+    }
+
+    local commands="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"
+
+    if [ "$cword" -eq 1 ]; then
+        COMPREPLY=( $(compgen -W "${commands}" -- "$cur") )
+        return 0
+    fi
+
+    local command="${words[1]}"
+    case "$command" in
+        completion)
+            COMPREPLY=( $(compgen -W "bash zsh fish install uninstall" -- "$cur") )
+            ;;
+        xdebug)
+            COMPREPLY=( $(compgen -W "on off status" -- "$cur") )
+            ;;
+        backup)
+            COMPREPLY=( $(compgen -W "create restore" -- "$cur") )
+            ;;
+        build)
+            COMPREPLY=( $(compgen -W "--tag= --no-cache --push --target=" -- "$cur") )
+            ;;
+        release|deploy)
+            COMPREPLY=( $(compgen -W "--skip-migration --skip-health --health-url=" -- "$cur") )
+            ;;
+        init)
+            COMPREPLY=( $(compgen -W "--force --version= --dir=" -- "$cur") )
+            ;;
+        up)
+            COMPREPLY=( $(compgen -W "--build --with= -d" -- "$cur") )
+            ;;
+        down)
+            COMPREPLY=( $(compgen -W "-v --volumes" -- "$cur") )
+            ;;
+        shell|restart|logs)
+            COMPREPLY=( $(compgen -W "php nginx mysql" -- "$cur") )
+            ;;
+    esac
     return 0
 }
 complete -F _c4ignite c4ignite`)
 	case "zsh":
-		fmt.Println(`#compdef c4ignite
+		fmt.Println(`if ! type compdef >/dev/null 2>&1; then
+    autoload -Uz compinit && compinit -u
+fi
+
 _c4ignite() {
     local -a commands
     commands=(
@@ -623,23 +666,65 @@ _c4ignite() {
         'restart:Restart services'
         'status:Show container health'
         'logs:Tail service logs'
-        'spark:Execute CI4 Spark'
+        'pull:Pull latest container images'
+        'shell:Drop into bash/sh shell inside container'
+        'spark:Execute CI4 Spark command'
         'db:Open interactive MySQL console'
-        'migrate:Run database migrations'
-        'seed:Seed database'
+        'migrate:Run database migrations (spark migrate)'
+        'seed:Seed database (spark db:seed)'
         'composer:Run Composer in PHP container'
-        'php:Run PHP in container'
-        'test:Run PHPUnit tests'
-        'lint:Run PHP code linter'
+        'php:Run PHP script in container'
+        'test:Run PHPUnit test suite'
+        'lint:Run PHP code style linter'
+        'xdebug:Toggle Xdebug dynamically (on|off|status)'
         'build:Build production multi-stage OCI container'
-        'deploy:Run production release and deployment pipeline'
-        'release:Run production release and deployment pipeline'
-        'doctor:Run environment diagnostics'
-        'backup:Backup or restore src/'
+        'deploy:Run production release & deployment pipeline'
+        'release:Run production release & deployment pipeline'
+        'doctor:Run environment diagnostic checks'
+        'backup:Backup or restore application files'
         'completion:Generate or install shell autocompletions'
+        'init:Bootstrap fresh CodeIgniter 4 project'
+        'version:Show version information'
+        'help:Show help information'
     )
-    _describe 'command' commands
-}`)
+
+    if (( CURRENT == 2 )); then
+        _describe -t commands 'c4ignite command' commands
+        return
+    fi
+
+    local command="$words[2]"
+    case "$command" in
+        completion)
+            local -a comp_cmds
+            comp_cmds=('bash:Bash completion' 'zsh:Zsh completion' 'fish:Fish completion' 'install:Install completion to profile' 'uninstall:Remove completion from profile')
+            _describe -t subcommands 'completion action' comp_cmds
+            ;;
+        xdebug)
+            local -a xdebug_cmds
+            xdebug_cmds=('on:Enable Xdebug' 'off:Disable Xdebug' 'status:Show Xdebug configuration')
+            _describe -t subcommands 'xdebug mode' xdebug_cmds
+            ;;
+        backup)
+            local -a backup_cmds
+            backup_cmds=('create:Create backup archive' 'restore:Restore backup archive')
+            _describe -t subcommands 'backup action' backup_cmds
+            ;;
+        build)
+            _values 'flags' '--tag=[Specify image tag]' '--no-cache[Build without cache]' '--push[Push image to registry]'
+            ;;
+        release|deploy)
+            _values 'flags' '--skip-migration[Skip database migrations]' '--skip-health[Skip post-deploy healthcheck]'
+            ;;
+        shell|restart|logs)
+            local -a services
+            services=('php:PHP Application Service' 'nginx:Web Server' 'mysql:Database')
+            _describe -t services 'service' services
+            ;;
+    esac
+}
+
+compdef _c4ignite c4ignite 2>/dev/null || true`)
 	case "fish":
 		fmt.Println(`complete -c c4ignite -f
 complete -c c4ignite -n "__fish_use_subcommand" -a "up down restart status logs pull shell spark composer php db migrate seed test lint xdebug build deploy release backup doctor init version help completion"`)
