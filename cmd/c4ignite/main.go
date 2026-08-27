@@ -161,6 +161,7 @@ func getRunner() (*config.ProjectContext, *compose.Runner) {
 func handleInit(ctx context.Context, args []string) {
 	tag := ""
 	force := false
+	noInstall := false
 	appDir := ""
 
 	for _, a := range args {
@@ -172,6 +173,8 @@ func handleInit(ctx context.Context, args []string) {
 			appDir = strings.TrimPrefix(a, "-d=")
 		} else if a == "--force" || a == "-f" {
 			force = true
+		} else if a == "--no-install" {
+			noInstall = true
 		} else if !strings.HasPrefix(a, "-") && appDir == "" {
 			appDir = a
 		}
@@ -251,6 +254,19 @@ func handleInit(ctx context.Context, args []string) {
 		if fileExists(devEnv) {
 			copyFile(devEnv, srcEnv)
 			fmt.Printf("📄 Created %s/.env from templates/env/dev.env\n", appDir)
+		}
+	}
+
+	// Run composer install to provision vendor/ and framework Boot.php
+	if !noInstall {
+		fmt.Println("📦 Installing framework dependencies (composer install)...")
+		projCtx, runner := getRunner()
+		if runner != nil && projCtx != nil {
+			if err := runner.ExecPHP(ctx, "composer", "install", "--no-interaction", "--prefer-dist"); err != nil {
+				fmt.Println("⚠️  Composer install in container failed or skipped. You can run 'c4ignite composer install' later.")
+			} else {
+				fmt.Println("✅ Vendor dependencies installed successfully.")
+			}
 		}
 	}
 
