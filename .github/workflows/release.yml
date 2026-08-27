@@ -27,11 +27,12 @@ jobs:
       - name: Build Multi-Arch Binaries
         run: |
           mkdir -p dist
-          GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o dist/c4ignite-linux-amd64 ./cmd/c4ignite
-          GOOS=linux   GOARCH=arm64 go build -ldflags="-s -w" -o dist/c4ignite-linux-arm64 ./cmd/c4ignite
-          GOOS=darwin  GOARCH=amd64 go build -ldflags="-s -w" -o dist/c4ignite-darwin-amd64 ./cmd/c4ignite
-          GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o dist/c4ignite-darwin-arm64 ./cmd/c4ignite
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/c4ignite-windows-amd64.exe ./cmd/c4ignite
+          LDFLAGS="-s -w -X main.Version=${{ github.ref_name }}"
+          GOOS=linux   GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-linux-amd64 ./cmd/c4ignite
+          GOOS=linux   GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-linux-arm64 ./cmd/c4ignite
+          GOOS=darwin  GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-darwin-amd64 ./cmd/c4ignite
+          GOOS=darwin  GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-darwin-arm64 ./cmd/c4ignite
+          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-windows-amd64.exe ./cmd/c4ignite
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

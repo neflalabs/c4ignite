@@ -25,8 +25,11 @@ import (
 	"github.com/neflalabs/c4ignite/internal/templates"
 )
 
+var (
+	Version = "dev"
+)
+
 const (
-	Version        = "v2026.08.08"
 	DefaultRelease = "v4.6.3"
 	AppStarterURL  = "https://github.com/codeigniter4/appstarter/archive/refs/tags/%s.tar.gz"
 )
@@ -46,7 +49,7 @@ func main() {
 
 	switch command {
 	case "version", "--version", "-v":
-		fmt.Printf("c4ignite %s (native golang)\n", Version)
+		fmt.Printf("c4ignite %s (go)\n", Version)
 	case "help", "--help", "-h":
 		printUsage()
 	case "init":
@@ -107,7 +110,7 @@ func printUsage() {
  / /    / // /_/ // __ '// __ \/ // __// _ \ 
 / /___ /__  __// // /_/ // / / / // /_ /  __/ 
 \____/   /_/  /_/ \__, //_/ /_/_/ \__/ \___/  
-                 /____/  CodeIgniter 4 Toolkit (Native Go)
+                 /____/  CodeIgniter 4 Toolkit (Go)
 `
 	fmt.Println(banner)
 	fmt.Printf("Usage: c4ignite <command> [arguments]\n\n")

@@ -22,7 +22,12 @@ jobs:
         run: go test -v ./...
 
       - name: Build Single Binary
-        run: go build -ldflags="-s -w" -o bin/c4ignite ./cmd/c4ignite
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            VERSION="v2026.08.08-${{ github.sha }}"
+          fi
+          go build -ldflags="-s -w -X main.Version=${VERSION}" -o bin/c4ignite ./cmd/c4ignite
 
       - name: Verify Binary CLI
         run: |
