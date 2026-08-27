@@ -54,9 +54,9 @@ func main() {
 		handleInit(ctx, args)
 	case "doctor":
 		handleDoctor(ctx)
-	case "up":
+	case "up", "u":
 		handleUp(ctx, args)
-	case "down":
+	case "down", "d", "stop":
 		handleDown(ctx, args)
 	case "restart":
 		handleRestart(ctx, args)

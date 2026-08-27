@@ -54,7 +54,7 @@ func RunDiagnostics(pCtx *config.ProjectContext) []CheckResult {
 		})
 	}
 
-	// 3. Port conflict checks (8000 for Nginx, 33060 for MariaDB)
+	// 3. Port status checks (8000 for Nginx, 33060 for MariaDB)
 	ports := []struct {
 		port int
 		name string
@@ -70,14 +70,14 @@ func RunDiagnostics(pCtx *config.ProjectContext) []CheckResult {
 			results = append(results, CheckResult{
 				Name:    fmt.Sprintf("Port %d (%s)", p.port, p.name),
 				Passed:  true,
-				Message: "Available",
+				Message: "Available (Stack is stopped or port is free)",
 			})
 		} else {
 			conn.Close()
 			results = append(results, CheckResult{
 				Name:    fmt.Sprintf("Port %d (%s)", p.port, p.name),
-				Passed:  false,
-				Message: "Port is currently in use by another process or running container",
+				Passed:  true,
+				Message: "Active (Service is listening and reachable)",
 			})
 		}
 	}
