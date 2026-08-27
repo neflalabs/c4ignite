@@ -88,6 +88,8 @@ func main() {
 		handleXdebug(ctx, args)
 	case "backup":
 		handleBackup(ctx, args)
+	case "update", "self-update":
+		handleSelfUpdate(ctx)
 	case "completion":
 		handleCompletion(args)
 	default:
@@ -129,12 +131,25 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("🛠️ Utilities & Testing:")
 	fmt.Println("  doctor                              Run host diagnostic checks")
+	fmt.Println("  update                              Self-update c4ignite to latest release")
 	fmt.Println("  test [options]                      Run PHPUnit test suite")
 	fmt.Println("  lint                                Run PHP code style linter")
 	fmt.Println("  backup [create|restore]             Fast native backup & restore")
 	fmt.Println("  completion [install|uninstall]      Configure shell auto-completions")
 	fmt.Println("  version                             Show CLI version")
 	fmt.Println()
+}
+
+func handleSelfUpdate(ctx context.Context) {
+	fmt.Println("🔄 Checking and updating c4ignite to the latest release...")
+	cmd := exec.CommandContext(ctx, "bash", "-c", "curl -fsSL https://raw.githubusercontent.com/neflalabs/c4ignite/main/install.sh | bash")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Update failed: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func getRunner() (*config.ProjectContext, *compose.Runner) {
@@ -572,7 +587,7 @@ func handleCompletion(args []string) {
         cword=$COMP_CWORD
     }
 
-    local commands="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug backup doctor init version help completion"
+    local commands="up down restart status logs pull shell spark composer php db migrate seed test lint xdebug backup doctor update init version help completion"
 
     if [ "$cword" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "${commands}" -- "$cur") )
@@ -631,6 +646,7 @@ _c4ignite() {
         'lint:Run PHP code style linter'
         'xdebug:Toggle Xdebug dynamically (on|off|status)'
         'doctor:Run environment diagnostic checks'
+        'update:Self-update c4ignite to latest release'
         'backup:Backup or restore application files'
         'completion:Generate or install shell autocompletions'
         'init:Bootstrap fresh CodeIgniter 4 project'

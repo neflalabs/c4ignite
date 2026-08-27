@@ -2,6 +2,7 @@ name: Release & Artifacts
 
 on:
   push:
+    branches: [ main ]
     tags:
       - 'v*'
 
@@ -15,11 +16,30 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+
+      - name: Determine Version Tag
+        id: get_version
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            DATE_TAG="v$(date +'%Y.%m.%d')"
+            COUNT=$(git tag -l "${DATE_TAG}*" | wc -l | tr -d ' ')
+            if [ "$COUNT" -eq 0 ]; then
+              VERSION="${DATE_TAG}"
+            else
+              VERSION="${DATE_TAG}.${COUNT}"
+            fi
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Run Tests
         run: go test -v ./...
@@ -27,7 +47,7 @@ jobs:
       - name: Build Multi-Arch Binaries
         run: |
           mkdir -p dist
-          LDFLAGS="-s -w -X main.Version=${{ github.ref_name }}"
+          LDFLAGS="-s -w -X main.Version=${VERSION}"
           GOOS=linux   GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-linux-amd64 ./cmd/c4ignite
           GOOS=linux   GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-linux-arm64 ./cmd/c4ignite
           GOOS=darwin  GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/c4ignite-darwin-amd64 ./cmd/c4ignite
@@ -37,6 +57,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.get_version.outputs.tag }}
+          name: ${{ steps.get_version.outputs.tag }}
           files: |
             dist/*
             install.sh
