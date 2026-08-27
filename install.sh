@@ -159,7 +159,7 @@ main() {
         # If release asset not yet available, try direct raw binary fallback
         RAW_URL="https://raw.githubusercontent.com/${REPO}/main/bin/${BINARY_NAME}"
         log_warn "Asset ${TARGET} not found in release. Trying repository binary..."
-        if ! curl -fSL "${RAW_URL}" -o "${TMP_BIN}"; then
+        if ! curl -fsSL "${RAW_URL}" -o "${TMP_BIN}"; then
             log_error "Failed to download c4ignite binary from ${DOWNLOAD_URL}"
             exit 1
         fi
