@@ -144,9 +144,11 @@ func printVersionAbout() {
 	fmt.Printf("🔥 c4ignite %s (go)\n", Version)
 	fmt.Println("   Lightweight & modern local development toolkit for CodeIgniter 4.")
 	fmt.Println()
-	fmt.Println("🌐 Official Repository : https://github.com/neflalabs/c4ignite")
+	fmt.Println("🌐 Website             : https://npx.my.id")
+	fmt.Println("🐙 GitHub Repository   : https://github.com/neflalabs/c4ignite")
 	fmt.Println("📦 Documentation       : https://github.com/neflalabs/c4ignite#readme")
-	fmt.Println("💡 Created by          : NeflaLabs (https://github.com/neflalabs)")
+	fmt.Println("📸 Instagram           : https://instagram.com/nefla")
+	fmt.Println("💡 Created by          : Nefla (https://npx.my.id)")
 	fmt.Println("⚖️  License             : MIT")
 }
 
